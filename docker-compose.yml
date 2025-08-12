@@ -1,0 +1,127 @@
+
+
+services:
+  # PostgreSQL Database - stores all our application data
+  postgres:
+    image: postgres:15-alpine
+    container_name: ceylon-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ceylon_smart_citizen
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ceylon123!
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"  # Maps container port 5432 to your computer's port 5432
+    volumes:
+      # Persist database data even when container stops
+      - postgres_data:/var/lib/postgresql/data
+      # Auto-run our schema when database starts
+      - ./backend/shared/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./backend/shared/database/seeds/sample_data.sql:/docker-entrypoint-initdb.d/02-sample-data.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ceylon_smart_citizen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ceylon-network
+
+  # Redis - used for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: ceylon-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass "ceylon123!"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ceylon-network
+
+  # API Gateway - main entry point for all API requests
+  api-gateway:
+    build: 
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: ceylon-api-gateway
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
+      - REDIS_URL=redis://:ceylon123!@redis:6379
+      - JWT_SECRET=hackathon-super-secure-jwt-secret-key-2025
+      - PORT=3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/api-gateway:/app
+      - /app/node_modules
+    networks:
+      - ceylon-network
+
+  # Auth Service - handles user authentication
+  auth-service:
+    build:
+      context: ./backend/services/auth-service
+      dockerfile: Dockerfile
+    container_name: ceylon-auth-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
+      - JWT_SECRET=hackathon-super-secure-jwt-secret-key-2025
+      - PORT=3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/services/auth-service:/app
+      - /app/node_modules
+    networks:
+      - ceylon-network
+
+  # pgAdmin - web interface to manage PostgreSQL database
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ceylon-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ceylon.gov.lk
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - ceylon-network
+
+# Named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+# Custom network for service communication
+networks:
+  ceylon-network:
+    driver: bridge
