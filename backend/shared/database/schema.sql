@@ -17,6 +17,7 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT true,
     email_verified BOOLEAN DEFAULT false,
     phone_verified BOOLEAN DEFAULT false,
+    global_logout_time TIMESTAMP, -- For global logout functionality
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -214,4 +215,80 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON appointments 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- User Preferences Table for storing user-specific settings
+CREATE TABLE user_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    notifications_enabled BOOLEAN DEFAULT true,
+    sms_notifications BOOLEAN DEFAULT true,
+    email_notifications BOOLEAN DEFAULT true,
+    language_preference VARCHAR(10) DEFAULT 'en',
+    theme_preference VARCHAR(20) DEFAULT 'light', -- 'light', 'dark', 'auto'
+    timezone_preference VARCHAR(50) DEFAULT 'Asia/Colombo',
+    privacy_level VARCHAR(20) DEFAULT 'standard', -- 'minimal', 'standard', 'full'
+    data_sharing_consent BOOLEAN DEFAULT false,
+    marketing_consent BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
+);
+
+-- Token Blacklist Table for JWT security
+CREATE TABLE blacklisted_tokens (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    token_hash VARCHAR(64) NOT NULL UNIQUE, -- SHA-256 hash of the token
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blacklisted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL, -- When the original token would expire
+    reason VARCHAR(100) DEFAULT 'logout', -- 'logout', 'security', 'password_change'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Failed Login Attempts Table for rate limiting and security
+CREATE TABLE failed_login_attempts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ip_address INET NOT NULL,
+    email VARCHAR(255),
+    attempt_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_agent TEXT,
+    success BOOLEAN DEFAULT false,
+    failure_reason VARCHAR(100), -- 'invalid_password', 'user_not_found', 'account_locked'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Sessions Table for tracking active sessions
+CREATE TABLE user_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    session_token VARCHAR(255) NOT NULL,
+    ip_address INET,
+    user_agent TEXT,
+    device_info JSONB, -- Store device fingerprint, OS, browser info
+    is_active BOOLEAN DEFAULT true,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Additional indexes for enhanced database performance and security
+CREATE INDEX idx_users_phone ON users(phone_number);
+CREATE INDEX idx_users_global_logout ON users(global_logout_time);
+CREATE INDEX idx_user_preferences_user_id ON user_preferences(user_id);
+CREATE INDEX idx_blacklisted_tokens_hash ON blacklisted_tokens(token_hash);
+CREATE INDEX idx_blacklisted_tokens_user_id ON blacklisted_tokens(user_id);
+CREATE INDEX idx_blacklisted_tokens_expires ON blacklisted_tokens(expires_at);
+CREATE INDEX idx_failed_login_attempts_ip ON failed_login_attempts(ip_address, attempt_time);
+CREATE INDEX idx_failed_login_attempts_email ON failed_login_attempts(email, attempt_time);
+CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id, is_active);
+CREATE INDEX idx_user_sessions_token ON user_sessions(session_token);
+CREATE INDEX idx_user_sessions_expires ON user_sessions(expires_at);
+
+-- Add triggers for updated_at timestamps on new tables
+CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_sessions_updated_at BEFORE UPDATE ON user_sessions 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
