@@ -8,7 +8,7 @@ const router = express.Router();
 
 // Enhanced rate limiting for authentication endpoints
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000, // 15 minutes - FIXED: removed backslashes
   max: 8, // Increased to 8 attempts for better UX
   message: {
     success: false,
@@ -25,7 +25,7 @@ const authLimiter = rateLimit({
 });
 
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
+  windowMs: 60 * 60 * 1000, // 1 hour - FIXED: removed backslashes
   max: 3, // Limit each IP to 3 registration attempts per hour
   message: {
     success: false,

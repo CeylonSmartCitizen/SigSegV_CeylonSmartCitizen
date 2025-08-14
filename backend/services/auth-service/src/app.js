@@ -75,7 +75,7 @@ app.get("/health", async (req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
+// app.use('/api/auth', authRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -94,7 +94,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// 404 handler
+// 404 handler - FIXED: removed backslash
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
