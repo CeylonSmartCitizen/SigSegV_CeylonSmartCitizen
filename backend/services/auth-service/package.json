@@ -1,20 +1,27 @@
-﻿{
+{
   "name": "ceylon-auth-service",
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon src/app.js",
-    "start": "node src/app.js"
+    "start": "node src/app.js",
+    "test": "node tests/offlineValidationTest.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "axios": "^1.11.0",
+    "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.1",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^16.3.1",
-    "joi": "^17.9.2",
-    "pg": "^8.11.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.8.1",
     "helmet": "^7.0.0",
-    "express-rate-limit": "^6.8.1"
+    "html-escaper": "^2.0.2",
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.1",
+    "pg": "^8.11.3",
+    "validator": "^13.11.0",
+    "xss": "^1.0.14"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
