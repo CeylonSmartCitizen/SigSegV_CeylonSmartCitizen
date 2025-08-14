@@ -3,6 +3,8 @@ const jwtUtils = require('../utils/jwt');
 const NICValidator = require('../utils/nicValidator');
 const TokenBlacklist = require('../utils/tokenBlacklist');
 const AuthRateLimit = require('../utils/authRateLimit');
+const UserDB = require('../utils/userDB');
+const UserPreferences = require('../utils/userPreferences');
 const db = require('../config/database');
 const {
   registerSchema,
@@ -13,7 +15,7 @@ const {
 
 class AuthController {
   /**
-   * User registration with comprehensive NIC validation
+   * User registration with comprehensive database integration
    */
   static async register(req, res) {
     try {
@@ -66,85 +68,60 @@ class AuthController {
         });
       }
 
-      // Check if email already exists
-      const emailCheck = await db.query(
-        'SELECT id FROM users WHERE email = $1',
-        [email.toLowerCase()]
-      );
-
-      if (emailCheck.rows.length > 0) {
-        const messages = NICValidator.ERROR_MESSAGES[language] || NICValidator.ERROR_MESSAGES.en;
-        return res.status(400).json({
-          success: false,
-          message: language === 'si' ? 'මෙම ඊ-මේල් ලිපිනය දැනටමත් ලියාපදිංචි කර ඇත' :
-                   language === 'ta' ? 'இந்த மின்னஞ்சல் முகவரி ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது' :
-                   'This email address is already registered',
-          code: 'EMAIL_ALREADY_EXISTS',
-          field: 'email'
-        });
-      }
-
-      // Hash password
-      const saltRounds = 12;
-      const passwordHash = await bcrypt.hash(password, saltRounds);
-
       // Extract birth date from NIC if not provided
       const finalBirthDate = dateOfBirth || nicValidation.details.birthDate;
 
-      // Insert new user
-      const insertQuery = `
-        INSERT INTO users (
-          email, password_hash, first_name, last_name, nic_number,
-          phone_number, preferred_language, address, date_of_birth,
-          is_active, email_verified, phone_verified
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        RETURNING id, email, first_name, last_name, nic_number, 
-                 phone_number, preferred_language, created_at, is_active
-      `;
-
-      const insertValues = [
-        email.toLowerCase(),
-        passwordHash,
+      // Create user using UserDB utility
+      const userData = {
+        email,
+        password,
         firstName,
         lastName,
-        nicValidation.details.formattedNIC,
+        nicNumber: nicValidation.details.formattedNIC,
         phoneNumber,
-        preferredLanguage || 'en',
+        preferredLanguage: preferredLanguage || 'en',
         address,
-        finalBirthDate,
-        true, // is_active
-        false, // email_verified
-        false  // phone_verified
-      ];
+        dateOfBirth: finalBirthDate
+      };
 
-      const result = await db.query(insertQuery, insertValues);
-      const newUser = result.rows[0];
+      const userResult = await UserDB.createUser(userData);
 
-      // Generate tokens
-      const tokens = jwtUtils.generateTokens({
-        id: newUser.id,
+      if (!userResult.success) {
+        const messages = NICValidator.ERROR_MESSAGES[language] || NICValidator.ERROR_MESSAGES.en;
+        
+        let message = userResult.message;
+        if (userResult.error === 'EMAIL_EXISTS') {
+          message = language === 'si' ? 'මෙම ඊ-මේල් ලිපිනය දැනටමත් ලියාපදිංචි කර ඇත' :
+                   language === 'ta' ? 'இந்த மின்னஞ்சல் முகவரி ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது' :
+                   'This email address is already registered';
+        } else if (userResult.error === 'NIC_EXISTS') {
+          message = language === 'si' ? 'මෙම ජාතික හැඳුනුම්පත් අංකය දැනටමත් ලියාපදිංචි කර ඇත' :
+                   language === 'ta' ? 'இந்த தேசிய அடையாள எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது' :
+                   'This NIC number is already registered';
+        }
+
+        return res.status(400).json({
+          success: false,
+          message,
+          code: userResult.error,
+          field: userResult.error === 'EMAIL_EXISTS' ? 'email' : 'nicNumber'
+        });
+      }
+
+      const newUser = userResult.user;
+
+      // Initialize default user preferences
+      await UserPreferences.initializeDefaultPreferences(newUser.id);
+
+      // Generate JWT tokens
+      const tokens = await jwtUtils.generateTokens({
+        userId: newUser.id,
         email: newUser.email,
         first_name: newUser.first_name,
         last_name: newUser.last_name,
         nic_number: newUser.nic_number,
         role: 'citizen'
       });
-
-      // Log successful registration
-      await db.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, new_values, ip_address, user_agent, success)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          newUser.id,
-          'user_registration',
-          'user',
-          newUser.id,
-          JSON.stringify({ email: newUser.email, nic_number: newUser.nic_number }),
-          req.ip,
-          req.get('User-Agent'),
-          true
-        ]
-      );
 
       // Prepare response
       const response = {
@@ -195,17 +172,19 @@ class AuthController {
         }
       }
 
+      const language = req.body.preferredLanguage || 'en';
       res.status(500).json({
         success: false,
-        message: 'Registration failed due to server error',
-        code: 'INTERNAL_SERVER_ERROR'
+        message: language === 'si' ? 'ලියාපදිංචි කිරීමේ දෝෂයක්' :
+                 language === 'ta' ? 'பதிவு செய்வதில் பிழை' :
+                 'Registration failed',
+        code: 'REGISTRATION_ERROR'
       });
     }
   }
 
   /**
-   * Enhanced user login with JWT token generation
-   * Supports login via email or phone number with advanced rate limiting
+   * Enhanced user login with comprehensive database integration
    */
   static async login(req, res) {
     try {
@@ -226,138 +205,69 @@ class AuthController {
       }
 
       const { email, phone, password } = value;
-      const loginField = email || phone;
+      const identifier = email || phone;
 
-      // Determine if login is by email or phone
-      const isEmailLogin = !!email;
-      const isPhoneLogin = !!phone;
-
-      // Find user by email or phone
-      let userQuery, queryParams;
-      
-      if (isEmailLogin) {
-        userQuery = `
-          SELECT id, email, password_hash, first_name, last_name, nic_number,
-                 phone_number, preferred_language, is_active, email_verified, 
-                 global_logout_time
-          FROM users 
-          WHERE email = $1
-        `;
-        queryParams = [email.toLowerCase()];
-      } else {
-        userQuery = `
-          SELECT id, email, password_hash, first_name, last_name, nic_number,
-                 phone_number, preferred_language, is_active, phone_verified,
-                 global_logout_time
-          FROM users 
-          WHERE phone_number = $1
-        `;
-        queryParams = [phone];
-      }
-      
-      const userResult = await db.query(userQuery, queryParams);
-
-      if (userResult.rows.length === 0) {
-        // Record failed attempt
-        await AuthRateLimit.recordAttempt(
-          req.ip, 
-          loginField, 
-          false, 
-          req.get('User-Agent')
-        );
-
-        // Log failed login attempt
-        await db.query(
-          `INSERT INTO audit_logs (action, entity_type, new_values, ip_address, user_agent, success, error_message)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [
-            'login_failed',
-            'user',
-            JSON.stringify({ [isEmailLogin ? 'email' : 'phone']: loginField }),
-            req.ip,
-            req.get('User-Agent'),
-            false,
-            'User not found'
-          ]
-        );
-
-        return res.status(401).json({
-          success: false,
-          message: language === 'si' ? 'වලංගු නොවන අක්තපත්‍ර' :
-                   language === 'ta' ? 'தவறான சான்றுகள்' :
-                   'Invalid credentials',
-          code: 'INVALID_CREDENTIALS'
-        });
-      }
-
-      const user = userResult.rows[0];
-
-      // Check if account is active
-      if (!user.is_active) {
-        // Record failed attempt
-        await AuthRateLimit.recordAttempt(
-          req.ip, 
-          loginField, 
-          false, 
-          req.get('User-Agent')
-        );
-
-        return res.status(401).json({
-          success: false,
-          message: language === 'si' ? 'ගිණුම අක්‍රිය කර ඇත' :
-                   language === 'ta' ? 'கணக்கு செயலிழக்கப்பட்டுள்ளது' :
-                   'Account is deactivated',
-          code: 'ACCOUNT_DEACTIVATED'
-        });
-      }
-
-      // Verify password
-      const passwordMatch = await bcrypt.compare(password, user.password_hash);
-      if (!passwordMatch) {
-        // Record failed attempt
-        await AuthRateLimit.recordAttempt(
-          req.ip, 
-          loginField, 
-          false, 
-          req.get('User-Agent')
-        );
-
-        // Log failed login attempt
-        await db.query(
-          `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success, error_message)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [
-            user.id,
-            'login_failed',
-            'user',
-            user.id,
-            req.ip,
-            req.get('User-Agent'),
-            false,
-            'Invalid password'
-          ]
-        );
-
-        return res.status(401).json({
-          success: false,
-          message: language === 'si' ? 'වලංගු නොවන අක්තපත්‍ර' :
-                   language === 'ta' ? 'தவறான சான்றுகள்' :
-                   'Invalid credentials',
-          code: 'INVALID_CREDENTIALS'
-        });
-      }
-
-      // Record successful attempt
-      await AuthRateLimit.recordAttempt(
-        req.ip, 
-        loginField, 
-        true, 
-        req.get('User-Agent')
+      // Check rate limiting before processing login
+      const rateLimitCheck = await AuthRateLimit.checkRateLimit(
+        req.ip,
+        identifier,
+        'login'
       );
 
-      // Generate tokens
-      const tokens = jwtUtils.generateTokens({
-        id: user.id,
+      if (!rateLimitCheck.allowed) {
+        // Log rate limit hit
+        await AuthRateLimit.recordAttempt(
+          req.ip,
+          identifier,
+          false,
+          'rate_limit_exceeded',
+          req.get('User-Agent')
+        );
+
+        return res.status(429).json({
+          success: false,
+          message: language === 'si' ? 'ඉතා වැඩි උත්සාහයන් සිදු කර ඇත. කරුණාකර පසුව උත්සාහ කරන්න' :
+                   language === 'ta' ? 'மிக அதிகமான முயற்சிகள். தயவுசெய்து பின்னர் முயற்சிக்கவும்' :
+                   'Too many attempts. Please try again later',
+          code: 'RATE_LIMIT_EXCEEDED',
+          retryAfter: rateLimitCheck.retryAfter
+        });
+      }
+
+      // Verify user credentials using UserDB
+      const credentialResult = await UserDB.verifyUserCredentials(identifier, password);
+
+      if (!credentialResult.success) {
+        // Log failed attempt
+        await AuthRateLimit.recordAttempt(
+          req.ip,
+          identifier,
+          false,
+          credentialResult.error,
+          req.get('User-Agent')
+        );
+
+        const errorMessage = credentialResult.error === 'USER_DEACTIVATED' ?
+          (language === 'si' ? 'ගිණුම අක්‍රිය කර ඇත' :
+           language === 'ta' ? 'கணக்கு செயலிழக்கப்பட்டுள்ளது' :
+           'Account has been deactivated') :
+          (language === 'si' ? 'වැරදි පුරනය තොරතුරු' :
+           language === 'ta' ? 'தவறான உள்நुழைவு விவரங்கள்' :
+           'Invalid credentials');
+
+        return res.status(401).json({
+          success: false,
+          message: errorMessage,
+          code: credentialResult.error
+        });
+      }
+
+      const user = credentialResult.user;
+      const loginMethod = credentialResult.loginMethod;
+
+      // Generate JWT tokens
+      const tokens = await jwtUtils.generateTokens({
+        userId: user.id,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
@@ -365,43 +275,19 @@ class AuthController {
         role: 'citizen'
       });
 
-      // Log successful login
-      await db.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          user.id,
-          'login_success',
-          'user',
-          user.id,
-          req.ip,
-          req.get('User-Agent'),
-          true
-        ]
+      // Log successful login attempt
+      await AuthRateLimit.recordAttempt(
+        req.ip,
+        identifier,
+        true,
+        'login_success',
+        req.get('User-Agent')
       );
-
-      // Create session record for additional tracking
-      try {
-        await db.query(
-          `INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [
-            user.id,
-            tokens.accessToken.substring(0, 50), // Store partial token for tracking
-            req.ip,
-            req.get('User-Agent'),
-            new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-          ]
-        );
-      } catch (sessionError) {
-        console.error('Session creation error:', sessionError);
-        // Don't fail login if session creation fails
-      }
 
       // Prepare response
       const response = {
         success: true,
-        message: language === 'si' ? 'පිවිසීම සාර්ථකයි' :
+        message: language === 'si' ? 'පුරනය සාර්ථකයි' :
                  language === 'ta' ? 'உள்நுழைவு வெற்றிகரமானது' :
                  'Login successful',
         data: {
@@ -413,348 +299,432 @@ class AuthController {
             nicNumber: user.nic_number,
             phoneNumber: user.phone_number,
             preferredLanguage: user.preferred_language,
+            loginMethod: loginMethod,
             isActive: user.is_active,
-            emailVerified: user.email_verified || false,
-            phoneVerified: user.phone_verified || false,
-            loginMethod: isEmailLogin ? 'email' : 'phone'
+            emailVerified: user.email_verified,
+            phoneVerified: user.phone_verified
           },
-          tokens,
-          sessionInfo: {
-            loginTime: new Date(),
-            ipAddress: req.ip,
-            userAgent: req.get('User-Agent')
-          }
+          tokens
         }
       };
 
-      res.status(200).json(response);
+      res.json(response);
 
     } catch (error) {
       console.error('Login error:', error);
+      
+      const language = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
       res.status(500).json({
         success: false,
-        message: 'Login failed due to server error',
+        message: language === 'si' ? 'පුරනය අසාර්ථකයි' :
+                 language === 'ta' ? 'உள்நுழைவு தோல்வியடைந்தது' :
+                 'Login failed',
         code: 'INTERNAL_SERVER_ERROR'
       });
     }
   }
 
   /**
-   * Refresh access token using refresh token
+   * Enhanced user profile retrieval with preferences
+   */
+  static async getProfile(req, res) {
+    try {
+      const userId = req.user.userId;
+
+      // Get complete user profile with preferences using UserDB
+      const userProfile = await UserDB.getUserProfileWithPreferences(userId);
+
+      if (!userProfile) {
+        return res.status(404).json({
+          success: false,
+          message: 'User profile not found',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      // Get user activity statistics
+      const activityStats = await UserDB.getUserActivityStats(userId, 30);
+
+      // Prepare response
+      const response = {
+        success: true,
+        message: 'Profile retrieved successfully',
+        data: {
+          user: {
+            id: userProfile.id,
+            email: userProfile.email,
+            firstName: userProfile.first_name,
+            lastName: userProfile.last_name,
+            nicNumber: userProfile.nic_number,
+            phoneNumber: userProfile.phone_number,
+            preferredLanguage: userProfile.preferred_language,
+            profileImageUrl: userProfile.profile_image_url,
+            dateOfBirth: userProfile.date_of_birth,
+            address: userProfile.address,
+            isActive: userProfile.is_active,
+            emailVerified: userProfile.email_verified,
+            phoneVerified: userProfile.phone_verified,
+            createdAt: userProfile.created_at,
+            updatedAt: userProfile.updated_at
+          },
+          preferences: userProfile.preferences || UserPreferences.getDefaultPreferences(),
+          statistics: {
+            ...userProfile.statistics,
+            activityStats
+          }
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Get profile error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve profile',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Update user profile with database integration
+   */
+  static async updateProfile(req, res) {
+    try {
+      const userId = req.user.userId;
+      const updateData = req.body;
+
+      // Update user profile using UserDB
+      const updateResult = await UserDB.updateUserProfile(userId, updateData);
+
+      if (!updateResult.success) {
+        return res.status(400).json({
+          success: false,
+          message: updateResult.message,
+          code: updateResult.error
+        });
+      }
+
+      // Prepare response
+      const response = {
+        success: true,
+        message: 'Profile updated successfully',
+        data: {
+          user: {
+            id: updateResult.user.id,
+            email: updateResult.user.email,
+            firstName: updateResult.user.first_name,
+            lastName: updateResult.user.last_name,
+            nicNumber: updateResult.user.nic_number,
+            phoneNumber: updateResult.user.phone_number,
+            preferredLanguage: updateResult.user.preferred_language,
+            profileImageUrl: updateResult.user.profile_image_url,
+            dateOfBirth: updateResult.user.date_of_birth,
+            address: updateResult.user.address,
+            isActive: updateResult.user.is_active,
+            emailVerified: updateResult.user.email_verified,
+            phoneVerified: updateResult.user.phone_verified,
+            updatedAt: updateResult.user.updated_at
+          }
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update profile',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Change password with database integration
+   */
+  static async changePassword(req, res) {
+    try {
+      const userId = req.user.userId;
+
+      // Validate request body
+      const { error, value } = changePasswordSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: error.details.map(detail => ({
+            field: detail.path.join('.'),
+            message: detail.message
+          }))
+        });
+      }
+
+      const { currentPassword, newPassword } = value;
+
+      // Update password using UserDB
+      const passwordResult = await UserDB.updatePassword(userId, newPassword, currentPassword);
+
+      if (!passwordResult.success) {
+        return res.status(400).json({
+          success: false,
+          message: passwordResult.message,
+          code: passwordResult.error
+        });
+      }
+
+      // Prepare response
+      const response = {
+        success: true,
+        message: 'Password changed successfully',
+        data: {
+          forceLogout: passwordResult.forceLogout,
+          message: 'Please login again with your new password'
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to change password',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Enhanced logout with token blacklisting
+   */
+  static async logout(req, res) {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      const userId = req.user.userId;
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'No token provided',
+          code: 'NO_TOKEN'
+        });
+      }
+
+      // Decode token to get expiration time
+      const decoded = jwtUtils.verifyToken(token);
+      const expiresAt = new Date(decoded.exp * 1000);
+
+      // Add token to blacklist
+      const blacklistResult = await TokenBlacklist.addToken(
+        token,
+        userId,
+        expiresAt,
+        'logout'
+      );
+
+      if (!blacklistResult) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to logout',
+          code: 'LOGOUT_FAILED'
+        });
+      }
+
+      // Prepare response
+      const response = {
+        success: true,
+        message: 'Logout successful',
+        data: {
+          tokenInvalidated: true,
+          logoutTime: new Date()
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Logout failed',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Global logout - invalidate all user sessions
+   */
+  static async globalLogout(req, res) {
+    try {
+      const userId = req.user.userId;
+
+      // Blacklist all user tokens using TokenBlacklist
+      const globalLogoutResult = await TokenBlacklist.blacklistAllUserTokens(
+        userId,
+        'global_logout'
+      );
+
+      if (!globalLogoutResult) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to perform global logout',
+          code: 'GLOBAL_LOGOUT_FAILED'
+        });
+      }
+
+      // Prepare response
+      const response = {
+        success: true,
+        message: 'Global logout successful',
+        data: {
+          allSessionsInvalidated: true,
+          globalLogoutTime: new Date()
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Global logout error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Global logout failed',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * User preferences management
+   */
+  static async getUserPreferences(req, res) {
+    try {
+      const userId = req.user.userId;
+
+      const preferences = await UserPreferences.getUserPreferences(userId);
+
+      const response = {
+        success: true,
+        message: 'Preferences retrieved successfully',
+        data: {
+          preferences: preferences || UserPreferences.getDefaultPreferences()
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Get preferences error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve preferences',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Update user preferences
+   */
+  static async updatePreferences(req, res) {
+    try {
+      const userId = req.user.userId;
+      const preferences = req.body;
+
+      const updateResult = await UserPreferences.setUserPreferences(userId, preferences);
+
+      if (!updateResult.success) {
+        return res.status(400).json({
+          success: false,
+          message: updateResult.message,
+          code: updateResult.error
+        });
+      }
+
+      const response = {
+        success: true,
+        message: 'Preferences updated successfully',
+        data: {
+          preferences: updateResult.preferences
+        }
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('Update preferences error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update preferences',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Refresh JWT tokens
    */
   static async refreshToken(req, res) {
     try {
-      // Validate request body
       const { error, value } = refreshTokenSchema.validate(req.body);
       if (error) {
         return res.status(400).json({
           success: false,
-          message: 'Refresh token is required',
+          message: 'Invalid refresh token',
           code: 'VALIDATION_ERROR'
         });
       }
 
       const { refreshToken } = value;
 
-      // Verify refresh token
-      const decoded = jwtUtils.verifyToken(refreshToken);
-      
-      if (decoded.type !== 'refresh') {
-        return res.status(401).json({
-          success: false,
-          message: 'Invalid token type',
-          code: 'INVALID_TOKEN_TYPE'
+      try {
+        const decoded = jwtUtils.verifyRefreshToken(refreshToken);
+        
+        // Check if user still exists and is active
+        const user = await UserDB.findUserById(decoded.userId);
+        if (!user || !user.is_active) {
+          return res.status(401).json({
+            success: false,
+            message: 'User not found or inactive',
+            code: 'USER_INVALID'
+          });
+        }
+
+        // Generate new tokens
+        const tokens = await jwtUtils.generateTokens({
+          userId: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          nic_number: user.nic_number,
+          role: 'citizen'
         });
-      }
 
-      // Get current user data
-      const userQuery = `
-        SELECT id, email, first_name, last_name, nic_number, is_active
-        FROM users 
-        WHERE id = $1
-      `;
-      
-      const userResult = await db.query(userQuery, [decoded.id]);
-
-      if (userResult.rows.length === 0 || !userResult.rows[0].is_active) {
-        return res.status(401).json({
-          success: false,
-          message: 'User not found or account deactivated',
-          code: 'USER_NOT_FOUND'
-        });
-      }
-
-      const user = userResult.rows[0];
-
-      // Generate new tokens
-      const tokens = jwtUtils.generateTokens({
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        nic_number: user.nic_number,
-        role: 'citizen'
-      });
-
-      res.status(200).json({
-        success: true,
-        message: 'Token refreshed successfully',
-        data: { tokens }
-      });
-
-    } catch (error) {
-      console.error('Token refresh error:', error);
-
-      if (error.message === 'Token expired') {
-        return res.status(401).json({
-          success: false,
-          message: 'Refresh token expired',
-          code: 'TOKEN_EXPIRED'
-        });
-      }
-
-      res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token',
-        code: 'INVALID_TOKEN'
-      });
-    }
-  }
-
-  /**
-   * Get current user profile
-   */
-  static async getProfile(req, res) {
-    try {
-      const userId = req.user.id;
-      
-      const userQuery = `
-        SELECT id, email, first_name, last_name, nic_number, phone_number,
-               preferred_language, address, date_of_birth, profile_image_url,
-               is_active, email_verified, phone_verified, created_at, updated_at
-        FROM users 
-        WHERE id = $1
-      `;
-      
-      const userResult = await db.query(userQuery, [userId]);
-
-      if (userResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'User not found',
-          code: 'USER_NOT_FOUND'
-        });
-      }
-
-      const user = userResult.rows[0];
-
-      // Get NIC details
-      const nicDetails = NICValidator.extractPersonalInfo(user.nic_number, user.preferred_language);
-
-      res.status(200).json({
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            firstName: user.first_name,
-            lastName: user.last_name,
-            nicNumber: user.nic_number,
-            phoneNumber: user.phone_number,
-            preferredLanguage: user.preferred_language,
-            address: user.address,
-            dateOfBirth: user.date_of_birth,
-            profileImageUrl: user.profile_image_url,
-            isActive: user.is_active,
-            emailVerified: user.email_verified,
-            phoneVerified: user.phone_verified,
-            createdAt: user.created_at,
-            updatedAt: user.updated_at,
-            nicDetails
+        res.json({
+          success: true,
+          message: 'Tokens refreshed successfully',
+          data: {
+            tokens
           }
-        }
-      });
+        });
+
+      } catch (tokenError) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid refresh token',
+          code: 'INVALID_REFRESH_TOKEN'
+        });
+      }
 
     } catch (error) {
-      console.error('Get profile error:', error);
+      console.error('Refresh token error:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to get profile',
-        code: 'INTERNAL_SERVER_ERROR'
-      });
-    }
-  }
-
-  /**
-   * Enhanced logout user with token blacklisting
-   * Invalidates JWT token and clears server-side session data
-   */
-  static async logout(req, res) {
-    try {
-      const token = req.token; // Token from auth middleware
-      const user = req.user;
-      const language = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
-
-      // Decode token to get expiration time
-      const decoded = jwtUtils.decodeToken(token);
-      const expiresAt = new Date(decoded.exp * 1000);
-
-      // Add token to blacklist
-      const blacklistResult = await TokenBlacklist.addToken(
-        token, 
-        user.id, 
-        expiresAt, 
-        'logout'
-      );
-
-      if (!blacklistResult) {
-        console.warn(`⚠️ Failed to blacklist token for user ${user.id}`);
-        // Continue with logout even if blacklisting fails
-      }
-
-      // Deactivate user sessions
-      try {
-        await db.query(
-          `UPDATE user_sessions 
-           SET is_active = FALSE, last_activity = NOW()
-           WHERE user_id = $1 AND is_active = TRUE`,
-          [user.id]
-        );
-      } catch (sessionError) {
-        console.error('Session deactivation error:', sessionError);
-        // Continue with logout
-      }
-
-      // Log successful logout
-      await db.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success, new_values)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          user.id,
-          'logout',
-          'user',
-          user.id,
-          req.ip,
-          req.get('User-Agent'),
-          true,
-          JSON.stringify({
-            tokenBlacklisted: blacklistResult,
-            logoutTime: new Date(),
-            sessionsClosed: true
-          })
-        ]
-      );
-
-      const response = {
-        success: true,
-        message: language === 'si' ? 'සාර්ථකව ඉවත් වී ඇත' :
-                 language === 'ta' ? 'வெற்றிகரமாக வெளியேறியது' :
-                 'Logged out successfully',
-        data: {
-          logoutTime: new Date(),
-          tokenInvalidated: blacklistResult,
-          sessionsClosed: true
-        }
-      };
-
-      res.status(200).json(response);
-
-    } catch (error) {
-      console.error('Logout error:', error);
-      
-      // Log failed logout attempt
-      try {
-        await db.query(
-          `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success, error_message)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-          [
-            req.user?.id || null,
-            'logout_failed',
-            'user',
-            req.user?.id || null,
-            req.ip,
-            req.get('User-Agent'),
-            false,
-            error.message
-          ]
-        );
-      } catch (logError) {
-        console.error('Failed to log logout error:', logError);
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Logout failed due to server error',
-        code: 'INTERNAL_SERVER_ERROR'
-      });
-    }
-  }
-
-  /**
-   * Global logout - invalidate all user sessions and tokens
-   */
-  static async globalLogout(req, res) {
-    try {
-      const user = req.user;
-      const language = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
-
-      // Perform global logout (invalidates all tokens issued before this time)
-      const globalLogoutResult = await TokenBlacklist.blacklistAllUserTokens(
-        user.id, 
-        'global_logout'
-      );
-
-      // Deactivate all user sessions
-      try {
-        await db.query(
-          `UPDATE user_sessions 
-           SET is_active = FALSE, last_activity = NOW()
-           WHERE user_id = $1 AND is_active = TRUE`,
-          [user.id]
-        );
-      } catch (sessionError) {
-        console.error('Global session deactivation error:', sessionError);
-      }
-
-      // Log global logout
-      await db.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success, new_values)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [
-          user.id,
-          'global_logout',
-          'user',
-          user.id,
-          req.ip,
-          req.get('User-Agent'),
-          true,
-          JSON.stringify({
-            globalLogoutTime: new Date(),
-            allSessionsClosed: true,
-            allTokensInvalidated: true
-          })
-        ]
-      );
-
-      const response = {
-        success: true,
-        message: language === 'si' ? 'සියලුම උපකරණවලින් ඉවත් විය' :
-                 language === 'ta' ? 'அனைத்து சாதனங்களிலிருந்தும் வெளியேறியது' :
-                 'Logged out from all devices successfully',
-        data: {
-          globalLogoutTime: new Date(),
-          allTokensInvalidated: true,
-          allSessionsClosed: true
-        }
-      };
-
-      res.status(200).json(response);
-
-    } catch (error) {
-      console.error('Global logout error:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Global logout failed due to server error',
+        message: 'Token refresh failed',
         code: 'INTERNAL_SERVER_ERROR'
       });
     }

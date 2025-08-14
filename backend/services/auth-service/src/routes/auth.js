@@ -46,6 +46,14 @@ router.post('/refresh-token', AuthController.refreshToken);
 
 // Protected routes (authentication required)
 router.get('/profile', authenticateToken, AuthController.getProfile);
+router.put('/profile', authenticateToken, AuthController.updateProfile);
+router.put('/change-password', authenticateToken, AuthController.changePassword);
+
+// User preferences routes
+router.get('/preferences', authenticateToken, AuthController.getUserPreferences);
+router.put('/preferences', authenticateToken, AuthController.updatePreferences);
+
+// Logout routes
 router.post('/logout', authenticateToken, AuthController.logout);
 router.post('/global-logout', authenticateToken, AuthController.globalLogout);
 
