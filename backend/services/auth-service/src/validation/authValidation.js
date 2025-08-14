@@ -112,28 +112,14 @@ const loginSchema = Joi.object({
   email: Joi.string()
     .email({ tlds: { allow: false } })
     .lowercase()
-    .when('phone', {
-      is: Joi.exist(),
-      then: Joi.forbidden(),
-      otherwise: Joi.required()
-    })
     .messages({
-      'string.email': 'Please provide a valid email address',
-      'any.required': 'Email is required when phone number is not provided',
-      'any.unknown': 'Cannot provide both email and phone number'
+      'string.email': 'Please provide a valid email address'
     }),
 
   phone: Joi.string()
     .pattern(/^(\+94|0)[1-9]\d{8}$/)
-    .when('email', {
-      is: Joi.exist(),
-      then: Joi.forbidden(),
-      otherwise: Joi.required()
-    })
     .messages({
-      'string.pattern.base': 'Please provide a valid Sri Lankan phone number',
-      'any.required': 'Phone number is required when email is not provided',
-      'any.unknown': 'Cannot provide both email and phone number'
+      'string.pattern.base': 'Please provide a valid Sri Lankan phone number'
     }),
 
   password: Joi.string()
