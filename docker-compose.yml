@@ -88,9 +88,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend/services/auth-service:/app
-      - /app/node_modules
     networks:
       - ceylon-network
 
