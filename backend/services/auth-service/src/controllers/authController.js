@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwtUtils = require('../utils/jwt');
 const NICValidator = require('../utils/nicValidator');
+const TokenBlacklist = require('../utils/tokenBlacklist');
+const AuthRateLimit = require('../utils/authRateLimit');
 const db = require('../config/database');
 const {
   registerSchema,
@@ -202,7 +204,8 @@ class AuthController {
   }
 
   /**
-   * User login with JWT token generation
+   * Enhanced user login with JWT token generation
+   * Supports login via email or phone number with advanced rate limiting
    */
   static async login(req, res) {
     try {
@@ -213,24 +216,56 @@ class AuthController {
       if (error) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid email or password',
-          code: 'VALIDATION_ERROR'
+          message: 'Invalid credentials format',
+          code: 'VALIDATION_ERROR',
+          errors: error.details.map(detail => ({
+            field: detail.path.join('.'),
+            message: detail.message
+          }))
         });
       }
 
-      const { email, password } = value;
+      const { email, phone, password } = value;
+      const loginField = email || phone;
 
-      // Find user by email
-      const userQuery = `
-        SELECT id, email, password_hash, first_name, last_name, nic_number,
-               phone_number, preferred_language, is_active, email_verified
-        FROM users 
-        WHERE email = $1
-      `;
+      // Determine if login is by email or phone
+      const isEmailLogin = !!email;
+      const isPhoneLogin = !!phone;
+
+      // Find user by email or phone
+      let userQuery, queryParams;
       
-      const userResult = await db.query(userQuery, [email.toLowerCase()]);
+      if (isEmailLogin) {
+        userQuery = `
+          SELECT id, email, password_hash, first_name, last_name, nic_number,
+                 phone_number, preferred_language, is_active, email_verified, 
+                 global_logout_time
+          FROM users 
+          WHERE email = $1
+        `;
+        queryParams = [email.toLowerCase()];
+      } else {
+        userQuery = `
+          SELECT id, email, password_hash, first_name, last_name, nic_number,
+                 phone_number, preferred_language, is_active, phone_verified,
+                 global_logout_time
+          FROM users 
+          WHERE phone_number = $1
+        `;
+        queryParams = [phone];
+      }
+      
+      const userResult = await db.query(userQuery, queryParams);
 
       if (userResult.rows.length === 0) {
+        // Record failed attempt
+        await AuthRateLimit.recordAttempt(
+          req.ip, 
+          loginField, 
+          false, 
+          req.get('User-Agent')
+        );
+
         // Log failed login attempt
         await db.query(
           `INSERT INTO audit_logs (action, entity_type, new_values, ip_address, user_agent, success, error_message)
@@ -238,7 +273,7 @@ class AuthController {
           [
             'login_failed',
             'user',
-            JSON.stringify({ email }),
+            JSON.stringify({ [isEmailLogin ? 'email' : 'phone']: loginField }),
             req.ip,
             req.get('User-Agent'),
             false,
@@ -248,7 +283,9 @@ class AuthController {
 
         return res.status(401).json({
           success: false,
-          message: 'Invalid email or password',
+          message: language === 'si' ? 'වලංගු නොවන අක්තපත්‍ර' :
+                   language === 'ta' ? 'தவறான சான்றுகள்' :
+                   'Invalid credentials',
           code: 'INVALID_CREDENTIALS'
         });
       }
@@ -257,6 +294,14 @@ class AuthController {
 
       // Check if account is active
       if (!user.is_active) {
+        // Record failed attempt
+        await AuthRateLimit.recordAttempt(
+          req.ip, 
+          loginField, 
+          false, 
+          req.get('User-Agent')
+        );
+
         return res.status(401).json({
           success: false,
           message: language === 'si' ? 'ගිණුම අක්‍රිය කර ඇත' :
@@ -269,6 +314,14 @@ class AuthController {
       // Verify password
       const passwordMatch = await bcrypt.compare(password, user.password_hash);
       if (!passwordMatch) {
+        // Record failed attempt
+        await AuthRateLimit.recordAttempt(
+          req.ip, 
+          loginField, 
+          false, 
+          req.get('User-Agent')
+        );
+
         // Log failed login attempt
         await db.query(
           `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success, error_message)
@@ -287,10 +340,20 @@ class AuthController {
 
         return res.status(401).json({
           success: false,
-          message: 'Invalid email or password',
+          message: language === 'si' ? 'වලංගු නොවන අක්තපත්‍ර' :
+                   language === 'ta' ? 'தவறான சான்றுகள்' :
+                   'Invalid credentials',
           code: 'INVALID_CREDENTIALS'
         });
       }
+
+      // Record successful attempt
+      await AuthRateLimit.recordAttempt(
+        req.ip, 
+        loginField, 
+        true, 
+        req.get('User-Agent')
+      );
 
       // Generate tokens
       const tokens = jwtUtils.generateTokens({
@@ -317,6 +380,24 @@ class AuthController {
         ]
       );
 
+      // Create session record for additional tracking
+      try {
+        await db.query(
+          `INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [
+            user.id,
+            tokens.accessToken.substring(0, 50), // Store partial token for tracking
+            req.ip,
+            req.get('User-Agent'),
+            new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+          ]
+        );
+      } catch (sessionError) {
+        console.error('Session creation error:', sessionError);
+        // Don't fail login if session creation fails
+      }
+
       // Prepare response
       const response = {
         success: true,
@@ -333,9 +414,16 @@ class AuthController {
             phoneNumber: user.phone_number,
             preferredLanguage: user.preferred_language,
             isActive: user.is_active,
-            emailVerified: user.email_verified
+            emailVerified: user.email_verified || false,
+            phoneVerified: user.phone_verified || false,
+            loginMethod: isEmailLogin ? 'email' : 'phone'
           },
-          tokens
+          tokens,
+          sessionInfo: {
+            loginTime: new Date(),
+            ipAddress: req.ip,
+            userAgent: req.get('User-Agent')
+          }
         }
       };
 
@@ -498,37 +586,175 @@ class AuthController {
   }
 
   /**
-   * Logout user (invalidate token)
+   * Enhanced logout user with token blacklisting
+   * Invalidates JWT token and clears server-side session data
    */
   static async logout(req, res) {
     try {
-      // For now, we'll just log the logout event
-      // In production, you might want to maintain a blacklist of tokens
-      
+      const token = req.token; // Token from auth middleware
+      const user = req.user;
+      const language = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
+
+      // Decode token to get expiration time
+      const decoded = jwtUtils.decodeToken(token);
+      const expiresAt = new Date(decoded.exp * 1000);
+
+      // Add token to blacklist
+      const blacklistResult = await TokenBlacklist.addToken(
+        token, 
+        user.id, 
+        expiresAt, 
+        'logout'
+      );
+
+      if (!blacklistResult) {
+        console.warn(`⚠️ Failed to blacklist token for user ${user.id}`);
+        // Continue with logout even if blacklisting fails
+      }
+
+      // Deactivate user sessions
+      try {
+        await db.query(
+          `UPDATE user_sessions 
+           SET is_active = FALSE, last_activity = NOW()
+           WHERE user_id = $1 AND is_active = TRUE`,
+          [user.id]
+        );
+      } catch (sessionError) {
+        console.error('Session deactivation error:', sessionError);
+        // Continue with logout
+      }
+
+      // Log successful logout
       await db.query(
-        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success, new_values)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [
-          req.user.id,
+          user.id,
           'logout',
           'user',
-          req.user.id,
+          user.id,
           req.ip,
           req.get('User-Agent'),
-          true
+          true,
+          JSON.stringify({
+            tokenBlacklisted: blacklistResult,
+            logoutTime: new Date(),
+            sessionsClosed: true
+          })
         ]
       );
 
-      res.status(200).json({
+      const response = {
         success: true,
-        message: 'Logged out successfully'
-      });
+        message: language === 'si' ? 'සාර්ථකව ඉවත් වී ඇත' :
+                 language === 'ta' ? 'வெற்றிகரமாக வெளியேறியது' :
+                 'Logged out successfully',
+        data: {
+          logoutTime: new Date(),
+          tokenInvalidated: blacklistResult,
+          sessionsClosed: true
+        }
+      };
+
+      res.status(200).json(response);
 
     } catch (error) {
       console.error('Logout error:', error);
+      
+      // Log failed logout attempt
+      try {
+        await db.query(
+          `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success, error_message)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            req.user?.id || null,
+            'logout_failed',
+            'user',
+            req.user?.id || null,
+            req.ip,
+            req.get('User-Agent'),
+            false,
+            error.message
+          ]
+        );
+      } catch (logError) {
+        console.error('Failed to log logout error:', logError);
+      }
+
       res.status(500).json({
         success: false,
-        message: 'Logout failed',
+        message: 'Logout failed due to server error',
+        code: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+  }
+
+  /**
+   * Global logout - invalidate all user sessions and tokens
+   */
+  static async globalLogout(req, res) {
+    try {
+      const user = req.user;
+      const language = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
+
+      // Perform global logout (invalidates all tokens issued before this time)
+      const globalLogoutResult = await TokenBlacklist.blacklistAllUserTokens(
+        user.id, 
+        'global_logout'
+      );
+
+      // Deactivate all user sessions
+      try {
+        await db.query(
+          `UPDATE user_sessions 
+           SET is_active = FALSE, last_activity = NOW()
+           WHERE user_id = $1 AND is_active = TRUE`,
+          [user.id]
+        );
+      } catch (sessionError) {
+        console.error('Global session deactivation error:', sessionError);
+      }
+
+      // Log global logout
+      await db.query(
+        `INSERT INTO audit_logs (user_id, action, entity_type, entity_id, ip_address, user_agent, success, new_values)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          user.id,
+          'global_logout',
+          'user',
+          user.id,
+          req.ip,
+          req.get('User-Agent'),
+          true,
+          JSON.stringify({
+            globalLogoutTime: new Date(),
+            allSessionsClosed: true,
+            allTokensInvalidated: true
+          })
+        ]
+      );
+
+      const response = {
+        success: true,
+        message: language === 'si' ? 'සියලුම උපකරණවලින් ඉවත් විය' :
+                 language === 'ta' ? 'அனைத்து சாதனங்களிலிருந்தும் வெளியேறியது' :
+                 'Logged out from all devices successfully',
+        data: {
+          globalLogoutTime: new Date(),
+          allTokensInvalidated: true,
+          allSessionsClosed: true
+        }
+      };
+
+      res.status(200).json(response);
+
+    } catch (error) {
+      console.error('Global logout error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Global logout failed due to server error',
         code: 'INTERNAL_SERVER_ERROR'
       });
     }

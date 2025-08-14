@@ -1,5 +1,6 @@
 const jwtUtils = require('../utils/jwt');
 const db = require('../config/database');
+const TokenBlacklist = require('../utils/tokenBlacklist');
 
 /**
  * Middleware for JWT token validation on protected routes
@@ -26,6 +27,26 @@ const authenticateToken = async (req, res, next) => {
         success: false,
         message: 'Invalid token type',
         code: 'INVALID_TOKEN_TYPE'
+      });
+    }
+
+    // Check if token is blacklisted
+    const isBlacklisted = await TokenBlacklist.isTokenBlacklisted(token);
+    if (isBlacklisted) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token has been invalidated',
+        code: 'TOKEN_BLACKLISTED'
+      });
+    }
+
+    // Check if user has been globally logged out after token was issued
+    const isGloballyLoggedOut = await TokenBlacklist.isUserGloballyLoggedOut(decoded.id, decoded.iat);
+    if (isGloballyLoggedOut) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token invalidated due to security logout',
+        code: 'TOKEN_GLOBALLY_INVALIDATED'
       });
     }
 
@@ -60,6 +81,9 @@ const authenticateToken = async (req, res, next) => {
       nicNumber: decoded.nicNumber,
       role: decoded.role
     };
+
+    // Store token for potential blacklisting on logout
+    req.token = token;
 
     next();
   } catch (error) {
