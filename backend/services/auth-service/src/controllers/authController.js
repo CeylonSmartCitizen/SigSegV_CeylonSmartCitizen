@@ -5,6 +5,8 @@ const TokenBlacklist = require('../utils/tokenBlacklist');
 const AuthRateLimit = require('../utils/authRateLimit');
 const UserDB = require('../utils/userDB');
 const UserPreferences = require('../utils/userPreferences');
+const PasswordSecurity = require('../utils/passwordSecurity');
+const InputValidator = require('../utils/inputValidator');
 const db = require('../config/database');
 const {
   registerSchema,
@@ -15,46 +17,43 @@ const {
 
 class AuthController {
   /**
-   * User registration with comprehensive database integration
+   * User registration with comprehensive security and validation
    */
   static async register(req, res) {
     try {
       // Get language preference from request
       const language = req.body.preferredLanguage || req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
       
-      // Validate request body
-      const { error, value } = registerSchema.validate(req.body, {
-        context: { language },
-        abortEarly: false
-      });
-
-      if (error) {
+      // Comprehensive input validation and sanitization
+      const validationResult = InputValidator.validateUserRegistration(req.body, language);
+      
+      if (!validationResult.isValid) {
         return res.status(400).json({
           success: false,
           message: 'Validation failed',
-          errors: error.details.map(detail => ({
-            field: detail.path.join('.'),
-            message: detail.message,
-            code: detail.type
-          }))
+          errors: validationResult.errors,
+          fieldValidations: validationResult.fieldValidations
         });
       }
 
-      const {
-        email,
-        password,
-        firstName,
-        lastName,
-        nicNumber,
-        phoneNumber,
-        preferredLanguage,
-        address,
-        dateOfBirth
-      } = value;
+      const sanitizedData = validationResult.sanitizedData;
 
-      // Comprehensive NIC validation with database duplicate check
+      // Validate password strength
+      const passwordValidation = PasswordSecurity.validatePasswordStrength(req.body.password, language);
+      
+      if (!passwordValidation.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: passwordValidation.error,
+          suggestions: passwordValidation.suggestions,
+          score: passwordValidation.score,
+          field: 'password'
+        });
+      }
+
+      // Additional NIC validation with database check
       const nicValidation = await NICValidator.validateWithDatabaseCheck(
-        nicNumber,
+        sanitizedData.nicNumber,
         db,
         language
       );
@@ -68,20 +67,24 @@ class AuthController {
         });
       }
 
-      // Extract birth date from NIC if not provided
-      const finalBirthDate = dateOfBirth || nicValidation.details.birthDate;
+      // Hash password securely
+      const hashedPassword = await PasswordSecurity.hashPassword(req.body.password);
 
-      // Create user using UserDB utility
+      // Extract birth date from NIC if not provided
+      const finalBirthDate = req.body.dateOfBirth || sanitizedData.nicDetails.birthDate;
+
+      // Create user using UserDB utility with sanitized and validated data
       const userData = {
-        email,
-        password,
-        firstName,
-        lastName,
-        nicNumber: nicValidation.details.formattedNIC,
-        phoneNumber,
-        preferredLanguage: preferredLanguage || 'en',
-        address,
-        dateOfBirth: finalBirthDate
+        email: sanitizedData.email,
+        password: hashedPassword,
+        firstName: sanitizedData.firstName,
+        lastName: sanitizedData.lastName,
+        nicNumber: sanitizedData.nicNumber,
+        phoneNumber: sanitizedData.phoneNumber,
+        preferredLanguage: sanitizedData.preferredLanguage || 'en',
+        address: sanitizedData.address,
+        dateOfBirth: finalBirthDate,
+        gender: sanitizedData.nicDetails.gender
       };
 
       const userResult = await UserDB.createUser(userData);
@@ -443,11 +446,12 @@ class AuthController {
   }
 
   /**
-   * Change password with database integration
+   * Change user password with enhanced security validation
    */
   static async changePassword(req, res) {
     try {
       const userId = req.user.userId;
+      const language = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
 
       // Validate request body
       const { error, value } = changePasswordSchema.validate(req.body);
@@ -464,11 +468,51 @@ class AuthController {
 
       const { currentPassword, newPassword } = value;
 
-      // Update password using UserDB
-      const passwordResult = await UserDB.updatePassword(userId, newPassword, currentPassword);
+      // Validate new password strength
+      const passwordValidation = PasswordSecurity.validatePasswordStrength(newPassword, language);
+      
+      if (!passwordValidation.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: passwordValidation.error,
+          suggestions: passwordValidation.suggestions,
+          score: passwordValidation.score,
+          field: 'newPassword'
+        });
+      }
+
+      // Get current user data
+      const currentUser = await UserDB.findUserById(userId);
+      if (!currentUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+          code: 'USER_NOT_FOUND'
+        });
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid = await PasswordSecurity.comparePassword(currentPassword, currentUser.password_hash);
+      
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({
+          success: false,
+          message: language === 'si' ? 'වර්තමාන මුරපදය වැරදියි' :
+                   language === 'ta' ? 'தற்போதைய கடவுச்சொல் தவறானது' :
+                   'Current password is incorrect',
+          code: 'INVALID_CURRENT_PASSWORD',
+          field: 'currentPassword'
+        });
+      }
+
+      // Hash new password
+      const hashedNewPassword = await PasswordSecurity.hashPassword(newPassword);
+
+      // Update password in database
+      const passwordResult = await UserDB.updateUserPassword(userId, hashedNewPassword);
 
       if (!passwordResult.success) {
-        return res.status(400).json({
+        return res.status(500).json({
           success: false,
           message: passwordResult.message,
           code: passwordResult.error
@@ -478,10 +522,14 @@ class AuthController {
       // Prepare response
       const response = {
         success: true,
-        message: 'Password changed successfully',
+        message: language === 'si' ? 'මුරපදය සාර්ථකව වෙනස් කරන ලදී' :
+                 language === 'ta' ? 'கடவுச்சொல் வெற்றிகரமாக மாற்றப்பட்டது' :
+                 'Password changed successfully',
         data: {
-          forceLogout: passwordResult.forceLogout,
-          message: 'Please login again with your new password'
+          passwordStrengthScore: passwordValidation.score,
+          securityMessage: language === 'si' ? 'ඔබගේ නව මුරපදයෙන් නැවත පුරනය වන්න' :
+                          language === 'ta' ? 'உங்கள் புதிய கடவுச்சொல்லுடன் மீண்டும் உள்நுழையவும்' :
+                          'Please login again with your new password'
         }
       };
 
