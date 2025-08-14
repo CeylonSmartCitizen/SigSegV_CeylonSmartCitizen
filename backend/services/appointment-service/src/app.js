@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const appointmentsRouter = require('./routes/appointments');
 const servicesRouter = require('./routes/services');
+const queueRouter = require('./routes/queue');
 const errorHandler = require('./middleware/errorHandler');
 
 app.use(express.json());
@@ -10,6 +11,7 @@ app.use(express.json());
 // API routes
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/services', servicesRouter);
+app.use('/api/queue', queueRouter);
 
 // Centralized error handler
 app.use(errorHandler);
@@ -24,7 +26,8 @@ app.listen(PORT, () => {
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`📅 Appointment API: http://localhost:${PORT}/api/appointments`);
   console.log(`🏛️  Services API: http://localhost:${PORT}/api/services`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`� Queue API: http://localhost:${PORT}/api/queue`);
+  console.log(`�🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = app;
