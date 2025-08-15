@@ -39,6 +39,26 @@ router.patch('/:id/read', async (req, res) => {
     res.status(500).json({ error: 'Failed to mark notification as read' });
   }
 });
+// GET /notifications - list all notifications (admin/debug)
+router.get('/', async (req, res) => {
+  try {
+    const notifications = await notificationService.getAllNotifications();
+    res.json(notifications);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
+// DELETE /notifications/:id - delete a notification
+router.delete('/:id', async (req, res) => {
+  try {
+    await notificationService.deleteNotification(req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete notification' });
+  }
+});
 module.exports = router;
 // Export the router to be used in the main app
 module.exports = router;

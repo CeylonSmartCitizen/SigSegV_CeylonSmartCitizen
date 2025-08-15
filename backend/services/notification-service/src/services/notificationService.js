@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const notificationService = require('../../notification-service/src/services/notificationService');
 const prisma = new PrismaClient();
 
 async function createNotification(data) {
@@ -19,8 +20,36 @@ async function markAsRead(notificationId) {
   });
 }
 
+// Send appointment confirmation notification
+async function sendAppointmentConfirmationNotification({ user_id, appointment_id, service_name, appointment_date }) {
+  return await createNotification({
+    user_id,
+    appointment_id,
+    title: 'Appointment Confirmed',
+    message: `Your appointment for ${service_name} on ${appointment_date} is confirmed.`,
+    type: 'appointment_reminder',
+    channel: 'app',
+    priority: 'high'
+  });
+}
+
+async function getAllNotifications() {
+  return await prisma.notification.findMany({
+    orderBy: { created_at: 'desc' }
+  });
+}
+
+async function deleteNotification(notificationId) {
+  return await prisma.notification.delete({
+    where: { id: notificationId }
+  });
+}
+
 module.exports = {
   createNotification,
   getUserNotifications,
-  markAsRead
+  markAsRead,
+  sendAppointmentConfirmationNotification,
+  getAllNotifications,
+  deleteNotification
 };

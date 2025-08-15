@@ -1,5 +1,3 @@
-
-
 services:
   # PostgreSQL Database - stores all our application data
   postgres:
@@ -90,6 +88,56 @@ services:
         condition: service_healthy
     volumes:
       - ./backend/services/auth-service:/app
+      - /app/node_modules
+    networks:
+      - ceylon-network
+
+  # Notification Service - handles notifications
+  notification-service:
+    build:
+      context: ./backend/services/notification-service
+      dockerfile: Dockerfile
+    container_name: ceylon-notification-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
+      - REDIS_URL=redis://:ceylon123!@redis:6379
+      - PORT=3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/services/notification-service:/app
+      - /app/node_modules
+    networks:
+      - ceylon-network
+
+  # Queue Service - handles real-time queue management
+  queue-service:
+    build:
+      context: ./backend/services/queue-service
+      dockerfile: Dockerfile
+    container_name: ceylon-queue-service
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
+      - REDIS_URL=redis://:ceylon123!@redis:6379
+      - PORT=3005
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/services/queue-service:/app
       - /app/node_modules
     networks:
       - ceylon-network
