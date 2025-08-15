@@ -1,0 +1,131 @@
+/* ServiceDirectoryHeader.css */
+.service-directory-header {
+  margin-bottom: 40px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.header-text h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 12px 0;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.header-text p {
+  font-size: 1.2rem;
+  color: #6b7280;
+  margin: 0;
+  max-width: 500px;
+}
+
+.header-controls {
+  flex-shrink: 0;
+  margin-left: 20px;
+}
+
+.service-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  padding: 24px;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+  
+  .header-controls {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+  
+  .service-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-text h1 {
+    font-size: 2rem;
+  }
+  
+  .header-text p {
+    font-size: 1rem;
+  }
+  
+  .service-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+  
+  .stat-item {
+    gap: 12px;
+  }
+  
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+  }
+}

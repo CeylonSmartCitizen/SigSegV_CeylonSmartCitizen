@@ -1,0 +1,244 @@
+/* ServiceCard.css */
+.service-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.service-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+/* Grid View Styling */
+.service-card.grid {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 280px;
+}
+
+/* List View Styling */
+.service-card.list {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-height: 120px;
+  padding: 16px 20px;
+}
+
+.service-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.service-card.list .service-card-header {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.service-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.service-card.list .service-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.service-status {
+  position: relative;
+}
+
+.availability-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.service-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.service-card.list .service-content {
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+}
+
+.service-main-info {
+  flex: 1;
+}
+
+.service-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.service-card.list .service-name {
+  font-size: 16px;
+  margin: 0 0 4px 0;
+}
+
+.service-department {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 8px 0;
+}
+
+.service-card.list .service-department {
+  margin: 0 0 4px 0;
+}
+
+.service-description {
+  font-size: 14px;
+  color: #4b5563;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.service-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.service-card.list .service-details {
+  flex-shrink: 0;
+  align-items: flex-end;
+}
+
+.service-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.service-card.list .service-meta {
+  justify-content: flex-end;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #4b5563;
+}
+
+.meta-item.rating {
+  color: #f59e0b;
+}
+
+.service-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.category-tag {
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.popular-tag {
+  background: #fef3c7;
+  color: #d97706;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.service-footer {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.service-list-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.service-action-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.service-card.list .service-action-btn {
+  width: auto;
+  padding: 8px 16px;
+}
+
+.service-action-btn:hover {
+  background: #2563eb;
+}
+
+.service-action-btn.secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.service-action-btn.secondary:hover {
+  background: #e5e7eb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .service-card.list {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .service-card.list .service-card-header {
+    margin-bottom: 12px;
+  }
+  
+  .service-card.list .service-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .service-card.list .service-details {
+    align-items: stretch;
+  }
+  
+  .service-card.list .service-meta {
+    justify-content: flex-start;
+  }
+}

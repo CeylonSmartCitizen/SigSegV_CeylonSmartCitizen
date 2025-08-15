@@ -1,0 +1,184 @@
+/* CategoryFilter.css */
+.category-filter {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.category-filter-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  width: 100%;
+  position: relative;
+}
+
+.category-item:hover {
+  background: #f8fafc;
+  transform: translateX(2px);
+}
+
+.category-item.selected {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid #3b82f6;
+}
+
+.category-item.selected:hover {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+}
+
+.category-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  color: #6b7280;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.category-item.selected .category-icon {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.category-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.category-name {
+  font-weight: 500;
+  color: #374151;
+  font-size: 14px;
+}
+
+.category-item.selected .category-name {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.category-count {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.category-item.selected .category-count {
+  color: #3b82f6;
+}
+
+.category-selected-indicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Mobile responsive horizontal scroll */
+@media (max-width: 768px) {
+  .category-filter {
+    padding: 16px;
+    border-radius: 8px;
+  }
+  
+  .category-filter-title {
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+  
+  .category-list {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 4px 0 8px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .category-item {
+    flex-direction: column;
+    min-width: 80px;
+    padding: 12px 8px;
+    text-align: center;
+    gap: 8px;
+  }
+  
+  .category-content {
+    align-items: center;
+  }
+  
+  .category-name {
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.2;
+  }
+  
+  .category-count {
+    font-size: 10px;
+  }
+  
+  .category-selected-indicator {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Compact horizontal layout for larger screens */
+.category-filter.horizontal {
+  padding: 16px 20px;
+}
+
+.category-filter.horizontal .category-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.category-filter.horizontal .category-item {
+  flex-direction: row;
+  min-width: auto;
+  padding: 8px 16px;
+}
+
+.category-filter.horizontal .category-content {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
