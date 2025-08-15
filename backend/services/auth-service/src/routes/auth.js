@@ -43,6 +43,8 @@ const advancedLoginLimiter = AuthRateLimit.middleware();
 router.post('/register', registerLimiter, AuthController.register);
 router.post('/login', advancedLoginLimiter, authLimiter, AuthController.login);
 router.post('/refresh-token', AuthController.refreshToken);
+router.post('/forgot-password', AuthController.forgotPassword);
+router.post('/reset-password', AuthController.resetPassword);
 
 // Protected routes (authentication required)
 router.get('/profile', authenticateToken, AuthController.getProfile);
