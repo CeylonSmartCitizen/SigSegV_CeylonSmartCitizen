@@ -1,7 +1,6 @@
 // Routes for notifications:
 const express = require('express');
 const router = express.Router();
-const { prisma } = require('../app');
 const notificationService = require('../services/notification-service');
 
 // POST /notifications - create a notification with title, message, type

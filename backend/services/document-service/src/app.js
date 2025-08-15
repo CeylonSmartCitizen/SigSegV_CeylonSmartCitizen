@@ -3,9 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { PrismaClient } = require('@prisma/client');
 const redis = require('redis');
+const redis = require('redis');
 
-const app = express();
-const prisma = new PrismaClient();
 const redisClient = redis.createClient();
 
 app.use(helmet());
@@ -29,4 +28,4 @@ app.listen(PORT, () => {
   console.log(`Document service running on port ${PORT}`);
 });
 
-module.exports = { app, prisma, redisClient };
+module.exports = { app, redisClient };

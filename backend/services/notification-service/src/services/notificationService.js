@@ -1,23 +1,39 @@
-const { PrismaClient } = require('@prisma/client');
-const notificationService = require('../../notification-service/src/services/notificationService');
-const prisma = new PrismaClient();
+const db = require('../config/database');
 
 async function createNotification(data) {
-  return await prisma.notification.create({ data });
+  const insertQuery = `
+    INSERT INTO notifications (
+      user_id, appointment_id, title, message, type, channel, priority
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    RETURNING *
+  `;
+  const values = [
+    data.user_id,
+    data.appointment_id || null,
+    data.title,
+    data.message,
+    data.type,
+    data.channel,
+    data.priority || 'medium'
+  ];
+  const result = await db.query(insertQuery, values);
+  return result.rows[0];
 }
 
 async function getUserNotifications(userId) {
-  return await prisma.notification.findMany({
-    where: { user_id: userId },
-    orderBy: { created_at: 'desc' }
-  });
+  const result = await db.query(
+    'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
+    [userId]
+  );
+  return result.rows;
 }
 
 async function markAsRead(notificationId) {
-  return await prisma.notification.update({
-    where: { id: notificationId },
-    data: { read_at: new Date() }
-  });
+  const result = await db.query(
+    'UPDATE notifications SET read_at = NOW() WHERE id = $1 RETURNING *',
+    [notificationId]
+  );
+  return result.rows[0];
 }
 
 // Send appointment confirmation notification
@@ -34,15 +50,15 @@ async function sendAppointmentConfirmationNotification({ user_id, appointment_id
 }
 
 async function getAllNotifications() {
-  return await prisma.notification.findMany({
-    orderBy: { created_at: 'desc' }
-  });
+  const result = await db.query(
+    'SELECT * FROM notifications ORDER BY created_at DESC'
+  );
+  return result.rows;
 }
 
 async function deleteNotification(notificationId) {
-  return await prisma.notification.delete({
-    where: { id: notificationId }
-  });
+  await db.query('DELETE FROM notifications WHERE id = $1', [notificationId]);
+  return { id: notificationId };
 }
 
 module.exports = {
