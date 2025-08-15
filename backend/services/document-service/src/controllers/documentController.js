@@ -6,7 +6,22 @@ const db = require('../config/database');
 exports.deleteDocument = async (req, res) => {
   try {
     const documentId = req.params.id;
+    // Fetch document before deletion for audit
+    const docResult = await db.query('SELECT * FROM documents WHERE id = $1', [documentId]);
+    const oldDoc = docResult.rows[0];
     await db.query('DELETE FROM documents WHERE id = $1', [documentId]);
+    // Audit log: document deletion
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: oldDoc ? oldDoc.user_id : null,
+      action: 'document_deleted',
+      entity_type: 'document',
+      entity_id: documentId,
+      old_values: oldDoc,
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent'],
+      success: true
+    });
     res.json({ message: 'Document deleted.' });
   } catch (error) {
     console.error(error);
@@ -42,11 +57,28 @@ exports.updateVerificationStatus = async (req, res) => {
     if (!verification_status) {
       return res.status(400).json({ error: 'verification_status is required.' });
     }
+    // Fetch old document for audit
+    const oldDocResult = await db.query('SELECT * FROM documents WHERE id = $1', [documentId]);
+    const oldDoc = oldDocResult.rows[0];
     const result = await db.query(
       'UPDATE documents SET verification_status = $1, verified_by = $2, verified_at = NOW() WHERE id = $3 RETURNING *',
       [verification_status, verified_by, documentId]
     );
-    res.json({ message: 'Verification status updated.', document: result.rows[0] });
+    const newDoc = result.rows[0];
+    // Audit log: verification status update
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: newDoc ? newDoc.user_id : null,
+      action: 'document_verification_updated',
+      entity_type: 'document',
+      entity_id: documentId,
+      old_values: oldDoc,
+      new_values: newDoc,
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent'],
+      success: true
+    });
+    res.json({ message: 'Verification status updated.', document: newDoc });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to update verification status.' });
@@ -138,6 +170,18 @@ exports.uploadDocument = async (req, res) => {
     ];
     const result = await db.query(insertQuery, values);
     const doc = result.rows[0];
+    // Audit log: document upload
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: user_id,
+      action: 'document_uploaded',
+      entity_type: 'document',
+      entity_id: doc.id,
+      new_values: doc,
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent'],
+      success: true
+    });
     res.status(201).json({
       message: 'File uploaded and metadata saved.',
       documentId: doc.id,
@@ -145,6 +189,18 @@ exports.uploadDocument = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    // Audit log: failed document upload
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: req.body.user_id,
+      action: 'document_upload_failed',
+      entity_type: 'document',
+      entity_id: null,
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent'],
+      success: false,
+      error_message: error.message
+    });
     res.status(500).json({ error: 'File upload or DB save failed.' });
   }
 };

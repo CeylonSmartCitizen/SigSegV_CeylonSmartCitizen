@@ -41,8 +41,33 @@ async function addQueueEntry(data) {
       RETURNING *`,
       [queue_session_id, appointment_id, position, status, estimated_wait_minutes]
     );
-    return result.rows[0];
+    const entry = result.rows[0];
+    // Audit log: appointment creation (queue entry)
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: entry.appointment_id, // If appointment_id is user, otherwise pass user_id from data
+      action: 'appointment_created',
+      entity_type: 'appointment',
+      entity_id: entry.appointment_id,
+      new_values: entry,
+      ip_address: data.ip_address || null,
+      user_agent: data.user_agent || null,
+      success: true
+    });
+    return entry;
   } catch (error) {
+    // Audit log: failed appointment creation
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: data.appointment_id,
+      action: 'appointment_creation_failed',
+      entity_type: 'appointment',
+      entity_id: data.appointment_id,
+      ip_address: data.ip_address || null,
+      user_agent: data.user_agent || null,
+      success: false,
+      error_message: error.message
+    });
     throw new Error('Failed to add queue entry: ' + error.message);
   }
 }
@@ -51,6 +76,9 @@ async function addQueueEntry(data) {
 async function updateQueueEntry(id, data) {
   const { position, status, estimated_wait_minutes } = data;
   try {
+    // Fetch old entry for audit
+    const oldEntryResult = await db.query('SELECT * FROM queue_entries WHERE id = $1', [id]);
+    const oldEntry = oldEntryResult.rows[0];
     const result = await db.query(
       `UPDATE queue_entries SET
         position = COALESCE($1, position),
@@ -60,7 +88,21 @@ async function updateQueueEntry(id, data) {
       RETURNING *`,
       [position, status, estimated_wait_minutes, id]
     );
-    return result.rows[0];
+    const newEntry = result.rows[0];
+    // Audit log: queue update
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: newEntry ? newEntry.appointment_id : null,
+      action: 'queue_entry_updated',
+      entity_type: 'queue_entry',
+      entity_id: id,
+      old_values: oldEntry,
+      new_values: newEntry,
+      ip_address: data.ip_address || null,
+      user_agent: data.user_agent || null,
+      success: true
+    });
+    return newEntry;
   } catch (error) {
     throw new Error('Failed to update queue entry: ' + error.message);
   }

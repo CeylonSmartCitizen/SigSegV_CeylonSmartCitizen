@@ -17,8 +17,37 @@ async function createNotification(data) {
     RETURNING *
   `;
   const values = [userId, appointmentId, title, message, type, channel, priority];
-  const result = await db.query(insertQuery, values);
-  return result.rows[0];
+  try {
+    const result = await db.query(insertQuery, values);
+    const notification = result.rows[0];
+    // Audit log: notification creation
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: notification.user_id,
+      action: 'notification_created',
+      entity_type: 'notification',
+      entity_id: notification.id,
+      new_values: notification,
+      ip_address: data.ip_address || null,
+      user_agent: data.user_agent || null,
+      success: true
+    });
+    return notification;
+  } catch (error) {
+    // Audit log: failed notification creation
+    const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+    await logAuditEvent({
+      user_id: data.user_id,
+      action: 'notification_creation_failed',
+      entity_type: 'notification',
+      entity_id: null,
+      ip_address: data.ip_address || null,
+      user_agent: data.user_agent || null,
+      success: false,
+      error_message: error.message
+    });
+    throw new Error('Failed to create notification: ' + error.message);
+  }
 }
 
 async function getUserNotifications(userId) {
@@ -30,11 +59,26 @@ async function getUserNotifications(userId) {
 }
 
 async function markAsRead(notificationId) {
+  // Fetch old notification for audit
+  const oldResult = await db.query('SELECT * FROM notifications WHERE id = $1', [notificationId]);
+  const oldNotification = oldResult.rows[0];
   const result = await db.query(
     'UPDATE notifications SET read_at = NOW() WHERE id = $1 RETURNING *',
     [notificationId]
   );
-  return result.rows[0];
+  const newNotification = result.rows[0];
+  // Audit log: notification read
+  const { logAuditEvent } = require('../../../audit-service/src/services/auditLogService');
+  await logAuditEvent({
+    user_id: newNotification ? newNotification.user_id : null,
+    action: 'notification_read',
+    entity_type: 'notification',
+    entity_id: notificationId,
+    old_values: oldNotification,
+    new_values: newNotification,
+    success: true
+  });
+  return newNotification;
 }
 
 // Send appointment confirmation notification
