@@ -1,21 +1,22 @@
 const db = require('../config/database');
 
 async function createNotification(data) {
+  // Accept both snake_case and camelCase fields from incoming payloads
+  const userId = data.user_id || data.userId;
+  const appointmentId = data.appointment_id || data.appointmentId || null;
+  const title = data.title || (data.type ? String(data.type).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Notification');
+  const message = data.message || data.msg || '';
+  const type = data.type || 'general';
+  const channel = data.channel || 'app';
+  const priority = data.priority || 'medium';
+
   const insertQuery = `
     INSERT INTO notifications (
       user_id, appointment_id, title, message, type, channel, priority
     ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *
   `;
-  const values = [
-    data.user_id,
-    data.appointment_id || null,
-    data.title,
-    data.message,
-    data.type,
-    data.channel,
-    data.priority || 'medium'
-  ];
+  const values = [userId, appointmentId, title, message, type, channel, priority];
   const result = await db.query(insertQuery, values);
   return result.rows[0];
 }

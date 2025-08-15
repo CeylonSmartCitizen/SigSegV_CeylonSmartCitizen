@@ -1,7 +1,7 @@
 // Routes for notifications:
 const express = require('express');
 const router = express.Router();
-const notificationService = require('../services/notification-service');
+const notificationService = require('../services/notificationService');
 
 // POST /notifications - create a notification with title, message, type
 router.post('/', async (req, res) => {
