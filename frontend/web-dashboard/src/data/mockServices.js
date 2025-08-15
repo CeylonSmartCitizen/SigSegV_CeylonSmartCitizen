@@ -12,7 +12,29 @@ export const mockServices = [
     description: "Apply for a certified copy of birth certificate",
     availability: "available",
     location: "Colombo",
-    popular: true
+    popular: true,
+    detailedDescription: "Obtain an official certified copy of your birth certificate for legal, educational, or personal purposes. This document is essential for passport applications, visa processing, educational admissions, and various government services.",
+    requiredDocuments: [
+      { name: "National Identity Card", example: "NIC copy (both sides)", required: true },
+      { name: "Birth Registration Extract", example: "Original birth registration document", required: true },
+      { name: "Sworn Affidavit", example: "JP certified affidavit if name differs", required: false },
+      { name: "Payment Receipt", example: "Treasury receipt for service fee", required: true }
+    ],
+    feeBreakdown: {
+      serviceFee: 300,
+      processingFee: 150,
+      courierFee: 50,
+      total: 500
+    },
+    officers: [
+      { id: 1, name: "Ms. Priya Wijeratne", designation: "Senior Registrar", rating: 4.7, experience: "8 years", avatar: "PW" },
+      { id: 2, name: "Mr. Kamal Perera", designation: "Assistant Registrar", rating: 4.3, experience: "5 years", avatar: "KP" }
+    ],
+    reviews: [
+      { id: 1, user: "Nimal Silva", rating: 5, comment: "Very efficient service. Got my certificate in 5 days!", date: "2025-08-10" },
+      { id: 2, user: "Sanduni Fernando", rating: 4, comment: "Good service but could improve communication.", date: "2025-08-08" },
+      { id: 3, user: "Ravi Gunasekara", rating: 5, comment: "Excellent support from officers. Highly recommended.", date: "2025-08-05" }
+    ]
   },
   {
     id: 2,
@@ -26,7 +48,29 @@ export const mockServices = [
     description: "Register your new business entity",
     availability: "available",
     location: "All Districts",
-    popular: true
+    popular: true,
+    detailedDescription: "Complete registration process for new business entities including sole proprietorships, partnerships, and private limited companies. This service provides legal recognition and enables you to operate your business officially.",
+    requiredDocuments: [
+      { name: "Business Name Reservation", example: "Approved name reservation certificate", required: true },
+      { name: "National Identity Card", example: "NIC of all directors/partners", required: true },
+      { name: "Address Proof", example: "Utility bill or lease agreement", required: true },
+      { name: "Memorandum & Articles", example: "Company constitution documents", required: true },
+      { name: "Bank Statement", example: "Business bank account statement", required: false }
+    ],
+    feeBreakdown: {
+      registrationFee: 2000,
+      documentFee: 300,
+      certificateFee: 200,
+      total: 2500
+    },
+    officers: [
+      { id: 3, name: "Mr. Lasantha Rajapaksa", designation: "Business Registrar", rating: 4.5, experience: "12 years", avatar: "LR" },
+      { id: 4, name: "Ms. Chamila Jayasinghe", designation: "Senior Officer", rating: 4.0, experience: "6 years", avatar: "CJ" }
+    ],
+    reviews: [
+      { id: 4, user: "Startup Lanka", rating: 4, comment: "Process was smooth, but took the full 14 days.", date: "2025-08-12" },
+      { id: 5, user: "Tech Solutions PVT", rating: 5, comment: "Professional service. All documents processed correctly.", date: "2025-08-09" }
+    ]
   },
   {
     id: 3,

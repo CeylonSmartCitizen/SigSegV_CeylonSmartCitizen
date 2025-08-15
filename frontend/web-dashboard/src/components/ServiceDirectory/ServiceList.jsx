@@ -2,7 +2,7 @@ import React from 'react';
 import ServiceCard from './ServiceCard';
 import '../../styles/ServiceList.css';
 
-const ServiceList = ({ services, viewMode, title, showAll = false, maxItems = null }) => {
+const ServiceList = ({ services, viewMode, title, showAll = false, maxItems = null, onServiceSelect }) => {
   const displayServices = maxItems && !showAll ? services.slice(0, maxItems) : services;
   
   return (
@@ -23,7 +23,8 @@ const ServiceList = ({ services, viewMode, title, showAll = false, maxItems = nu
           <ServiceCard 
             key={service.id} 
             service={service} 
-            viewMode={viewMode} 
+            viewMode={viewMode}
+            onViewDetails={onServiceSelect}
           />
         ))}
       </div>

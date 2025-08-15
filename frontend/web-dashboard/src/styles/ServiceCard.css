@@ -178,6 +178,8 @@
 .service-footer {
   margin-top: auto;
   padding-top: 16px;
+  display: flex;
+  gap: 8px;
 }
 
 .service-list-actions {
@@ -187,16 +189,36 @@
 }
 
 .service-action-btn {
-  background: #3b82f6;
-  color: white;
   border: none;
   padding: 10px 20px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
-  width: 100%;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.service-action-btn.primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.service-action-btn.primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.service-action-btn.secondary {
+  background: #f8fafc;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.service-action-btn.secondary:hover {
+  background: #f1f5f9;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
 }
 
 .service-card.list .service-action-btn {

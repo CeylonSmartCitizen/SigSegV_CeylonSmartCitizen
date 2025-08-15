@@ -25,7 +25,7 @@ const iconMap = {
   Receipt
 };
 
-const ServiceCard = ({ service, viewMode = 'grid' }) => {
+const ServiceCard = ({ service, viewMode = 'grid', onViewDetails }) => {
   const IconComponent = iconMap[service.icon] || FileText;
 
   const getAvailabilityColor = (availability) => {
@@ -93,7 +93,13 @@ const ServiceCard = ({ service, viewMode = 'grid' }) => {
 
       {viewMode === 'grid' && (
         <div className="service-footer">
-          <button className="service-action-btn">
+          <button 
+            className="service-action-btn secondary"
+            onClick={() => onViewDetails?.(service)}
+          >
+            View Details
+          </button>
+          <button className="service-action-btn primary">
             Apply Now
           </button>
         </div>
@@ -104,7 +110,10 @@ const ServiceCard = ({ service, viewMode = 'grid' }) => {
           <button className="service-action-btn primary">
             Apply Now
           </button>
-          <button className="service-action-btn secondary">
+          <button 
+            className="service-action-btn secondary"
+            onClick={() => onViewDetails?.(service)}
+          >
             View Details
           </button>
         </div>

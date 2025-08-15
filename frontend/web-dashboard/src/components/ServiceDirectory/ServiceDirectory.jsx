@@ -3,6 +3,8 @@ import ServiceDirectoryHeader from './ServiceDirectoryHeader';
 import FilterBar from './FilterBar';
 import SortDropdown from './SortDropdown';
 import ServiceList from './ServiceList';
+import ServiceDetails from './ServiceDetails';
+import BookingSuccessNotification from '../booking/BookingSuccessNotification';
 import { 
   mockServices, 
   recentlyViewedServices, 
@@ -17,6 +19,8 @@ const ServiceDirectory = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedService, setSelectedService] = useState(null);
+  const [completedBooking, setCompletedBooking] = useState(null);
   const [sortConfig, setSortConfig] = useState({
     field: 'name',
     direction: 'asc'
@@ -46,6 +50,24 @@ const ServiceDirectory = () => {
 
   const handleSortChange = (newSortConfig) => {
     setSortConfig(newSortConfig);
+  };
+
+  const handleServiceSelect = (service) => {
+    setSelectedService(service);
+  };
+
+  const handleBackToDirectory = () => {
+    setSelectedService(null);
+  };
+
+  const handleBookingComplete = (bookingData) => {
+    console.log('Booking completed in directory:', bookingData);
+    setCompletedBooking(bookingData);
+    setSelectedService(null);
+  };
+
+  const handleCloseSuccessNotification = () => {
+    setCompletedBooking(null);
   };
 
   // Parse duration string to minutes for comparison
@@ -249,6 +271,17 @@ const ServiceDirectory = () => {
     });
   };
 
+  // Conditional rendering based on selected service
+  if (selectedService) {
+    return (
+      <ServiceDetails
+        service={selectedService}
+        onBack={handleBackToDirectory}
+        onBookAppointment={handleBookingComplete}
+      />
+    );
+  }
+
   return (
     <div className="service-directory">
       <ServiceDirectoryHeader 
@@ -307,6 +340,7 @@ const ServiceDirectory = () => {
               viewMode={viewMode}
               title="Recently Viewed"
               maxItems={3}
+              onServiceSelect={handleServiceSelect}
             />
           )}
 
@@ -316,6 +350,7 @@ const ServiceDirectory = () => {
             viewMode={viewMode}
             title="Popular Services"
             maxItems={4}
+            onServiceSelect={handleServiceSelect}
           />
         </>
       )}
@@ -327,6 +362,7 @@ const ServiceDirectory = () => {
           viewMode={viewMode}
           title="Recently Viewed (Filtered)"
           maxItems={3}
+          onServiceSelect={handleServiceSelect}
         />
       )}
 
@@ -336,6 +372,7 @@ const ServiceDirectory = () => {
           viewMode={viewMode}
           title="Popular Services (Filtered)"
           maxItems={4}
+          onServiceSelect={handleServiceSelect}
         />
       )}
 
@@ -345,6 +382,7 @@ const ServiceDirectory = () => {
         viewMode={viewMode}
         title={hasActiveFilters ? "Filtered Results" : "All Services"}
         showAll={true}
+        onServiceSelect={handleServiceSelect}
       />
 
       {/* No results message */}
@@ -356,6 +394,14 @@ const ServiceDirectory = () => {
             Reset All Filters
           </button>
         </div>
+      )}
+
+      {/* Success Notification */}
+      {completedBooking && (
+        <BookingSuccessNotification
+          bookingData={completedBooking}
+          onClose={handleCloseSuccessNotification}
+        />
       )}
     </div>
   );
