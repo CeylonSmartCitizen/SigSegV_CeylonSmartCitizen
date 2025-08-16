@@ -17,7 +17,7 @@ try {
 }
 
 // Base URL for the auth service (update if needed)
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3000';
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 
 
 // Helper to pick only essential headers

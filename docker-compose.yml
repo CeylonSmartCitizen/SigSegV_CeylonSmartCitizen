@@ -96,6 +96,31 @@ services:
     networks:
       - ceylon-network
 
+  # Appointment Service - handles appointment booking and management
+  appointment-service:
+    build:
+      context: ./backend/services/appointment-service
+      dockerfile: Dockerfile
+    container_name: ceylon-appointment-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
+      - REDIS_URL=redis://:ceylon123!@redis:6379
+      - PORT=3002
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/services/appointment-service:/app
+      - /app/node_modules
+    networks:
+      - ceylon-network
+
   # Support Services - unified service handling documents, notifications, queues, and audit
   support-services:
     build:
