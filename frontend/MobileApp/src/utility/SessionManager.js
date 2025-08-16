@@ -35,18 +35,18 @@ export async function restoreSession(dispatch, fetchProfile) {
 }
 
 // If you want to support refresh tokens, implement and uncomment below when backend is ready.
-// import { getRefreshToken, saveToken, saveRefreshToken } from './secureStorage';
-// export async function refreshSession() {
-//   const refreshToken = await getRefreshToken();
-//   if (!refreshToken) return false;
-//   try {
-//     const res = await apiClient.post('/refresh-token', { refreshToken });
-//     await saveToken(res.data.token);
-//     // await saveRefreshToken(res.data.refreshToken);
-//     return true;
-//   } catch (e) {
-//     await removeToken();
-//     // await removeRefreshToken();
-//     return false;
-//   }
-// }
+import { getRefreshToken, saveToken, saveRefreshToken } from './secureStorage';
+export async function refreshSession() {
+const refreshToken = await getRefreshToken();
+if (!refreshToken) return false;
+   try {
+    const res = await apiClient.post('/refresh-token', { refreshToken });
+     await saveToken(res.data.token);
+      await saveRefreshToken(res.data.refreshToken);
+     return true;
+   } catch (e) {
+     await removeToken();
+      await removeRefreshToken();
+     return false;
+   }
+ }

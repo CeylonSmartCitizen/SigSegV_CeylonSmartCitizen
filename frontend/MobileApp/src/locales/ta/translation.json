@@ -45,9 +45,9 @@
   "sinhala": "சிங்களம்",
   "tamil": "தமிழ்",
   "date_format": "DD/MM/YYYY",
-  "currency_lkr": "ரூ."
+  "currency_lkr": "ரூ.",
 
-  // Uncomment the following lines when backend endpoints are ready.
+  
 
   "session_details": "அமர்வு விவரங்கள்",
   "session_device": "சாதனம்",

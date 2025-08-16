@@ -33,14 +33,14 @@ export const fetchProfile = createAsyncThunk('auth/fetchProfile', async (_, { re
 });
 
 // If you want to persist language/user preferences to backend, implement and uncomment below when backend is ready.
-// export const updatePreferences = createAsyncThunk('auth/updatePreferences', async (prefs, { rejectWithValue }) => {
-//   try {
-//     const response = await api.updatePreferences(prefs);
-//     return response.data;
-//   } catch (err) {
-//     return rejectWithValue('Failed to update preferences');
-//   }
-// });
+export const updatePreferences = createAsyncThunk('auth/updatePreferences', async (prefs, { rejectWithValue }) => {
+   try {
+     const response = await api.updatePreferences(prefs);
+     return response.data;
+   } catch (err) {
+     return rejectWithValue('Failed to update preferences');
+   }
+ });
 
 const initialState = {
   user: null,
@@ -99,7 +99,7 @@ const authSlice = createSlice({
         state.user = action.payload;
       });
       // .addCase(updatePreferences.fulfilled, (state, action) => {
-      //   state.preferences = action.payload;
+      //    state.preferences = action.payload;
       // });
   },
 });

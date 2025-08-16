@@ -36,17 +36,17 @@ export const logoutAll = () => axios.post(`${API_BASE}/global-logout`);
 // Uncomment and use them when your backend supports these features:
 
 // // Active Sessions
-// export const getActiveSessions = () => axios.get(`${API_BASE}/sessions`);
-// export const logoutSession = (sessionId) => axios.post(`${API_BASE}/logout-session/${sessionId}`);
-// export const logoutAllSessions = () => axios.post(`${API_BASE}/logout-all-sessions`);
+export const getActiveSessions = () => axios.get(`${API_BASE}/sessions`);
+export const logoutSession = (sessionId) => axios.post(`${API_BASE}/logout-session/${sessionId}`);
+export const logoutAllSessions = () => axios.post(`${API_BASE}/logout-all-sessions`);
 
 // // Account Deactivation
-// export const deactivateAccount = () => axios.delete(`${API_BASE}/deactivate-account`);
+export const deactivateAccount = () => axios.delete(`${API_BASE}/deactivate-account`);
 
 // // Data Export
-// export const exportUserData = () => axios.get(`${API_BASE}/export-data`);
+export const exportUserData = () => axios.get(`${API_BASE}/export-data`);
 
 // // Two-Factor Authentication
-// export const setupTwoFactor = () => axios.post(`${API_BASE}/2fa/setup`);
-// export const verifyTwoFactor = (code) => axios.post(`${API_BASE}/2fa/verify`, { code });
-// export const disableTwoFactor = () => axios.post(`${API_BASE}/2fa/disable`);
+export const setupTwoFactor = () => axios.post(`${API_BASE}/2fa/setup`);
+export const verifyTwoFactor = (code) => axios.post(`${API_BASE}/2fa/verify`, { code });
+export const disableTwoFactor = () => axios.post(`${API_BASE}/2fa/disable`);

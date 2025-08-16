@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Button, Alert, ActivityIndicator } from 'react-native';
-// import { deactivateAccount } from '../../utility/api'; // Uncomment when backend endpoint is ready
+import { deactivateAccount } from '../../utility/api'; // Uncomment when backend endpoint is ready
 
 export default function DeactivateAccount() {
   const [loading, setLoading] = useState(false);
@@ -10,9 +10,9 @@ export default function DeactivateAccount() {
     setLoading(true);
     setMessage('');
     try {
-      // Uncomment the following lines when backend endpoint is available
-      // await deactivateAccount();
-      // setMessage('Your account has been deactivated.');
+      //Uncomment the following lines when backend endpoint is available
+      await deactivateAccount();
+      setMessage('Your account has been deactivated.');
       // Optionally, log the user out or navigate away
       Alert.alert(
         'Account Deactivation',

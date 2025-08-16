@@ -45,6 +45,6 @@ export const removeToken = async () => {
 };
 
 // Uncomment and use when backend supports refresh tokens
-// export const saveRefreshToken = async (refreshToken) => saveItem(REFRESH_TOKEN_KEY, refreshToken);
-// export const getRefreshToken = async () => getItem(REFRESH_TOKEN_KEY);
-// export const removeRefreshToken = async () => deleteItem(REFRESH_TOKEN_KEY);
+export const saveRefreshToken = async (refreshToken) => saveItem(REFRESH_TOKEN_KEY, refreshToken);
+export const getRefreshToken = async () => getItem(REFRESH_TOKEN_KEY);
+export const removeRefreshToken = async () => deleteItem(REFRESH_TOKEN_KEY);

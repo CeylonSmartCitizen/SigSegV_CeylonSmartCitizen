@@ -46,14 +46,14 @@
   "tamil": "Tamil",
   "date_format": "MM/DD/YYYY",
   "currency_lkr": "LKR",
-  // The following are for features that require backend endpoints. Uncomment when backend is ready.
-  // "session_details": "Session Details",
-  // "session_device": "Device",
-  // "session_location": "Location",
-  // "session_last_active": "Last Active",
-  // "logout_other_sessions": "Logout Other Sessions",
-  // "deactivation_warning": "Are you sure you want to deactivate your account? This action cannot be undone.",
-  // "export_data_description": "Download all your personal data in a machine-readable format.",
-  // "download": "Download",
-  // "voice_input": "Voice Input"
+  
+  "session_details": "Session Details",
+  "session_device": "Device",
+  "session_location": "Location",
+  "session_last_active": "Last Active",
+  "logout_other_sessions": "Logout Other Sessions",
+  "deactivation_warning": "Are you sure you want to deactivate your account? This action cannot be undone.",
+  "export_data_description": "Download all your personal data in a machine-readable format.",
+  "download": "Download",
+  "voice_input": "Voice Input"
 }

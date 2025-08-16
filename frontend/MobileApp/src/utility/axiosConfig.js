@@ -31,14 +31,14 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       try {
         // Uncomment and implement refresh logic when backend is ready
-        // const refreshToken = await secureStorage.getRefreshToken();
-        // const res = await axios.post(`${API_BASE_URL}/refresh-token`, { refreshToken });
-        // await secureStorage.saveToken(res.data.token);
-        // originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
-        // return apiClient(originalRequest);
+        const refreshToken = await secureStorage.getRefreshToken();
+        const res = await axios.post(`${API_BASE_URL}/refresh-token`, { refreshToken });
+        await secureStorage.saveToken(res.data.token);
+        originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
+        return apiClient(originalRequest);
       } catch (refreshError) {
         // Redirect to login or handle logout
-        // e.g., store.dispatch(logout());
+        store.dispatch(logout());
       }
     }
     return Promise.reject(error);

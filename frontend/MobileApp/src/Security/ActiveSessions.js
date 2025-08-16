@@ -10,44 +10,47 @@ export default function ActiveSessions() {
 
   useEffect(() => {
     // Uncomment and use when backend endpoint is available
-    // (async () => {
-    //   try {
-    //     const res = await getActiveSessions();
-    //     setSessions(res.data);
-    //   } catch (e) {
-    //     setError('Failed to load sessions.');
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // })();
+    /*
+    (async () => {
+       try {
+         const res = await getActiveSessions();
+         setSessions(res.data);
+       } catch (e) {
+         setError('Failed to load sessions.');
+       } finally {
+         setLoading(false);
+       }
+     })();
+    */
     setLoading(false); // Remove this line when enabling backend call
   }, []);
 
-  // const handleLogoutSession = async (sessionId) => {
-  //   setLoggingOut(true);
-  //   try {
-  //     await logoutSession(sessionId);
-  //     setSessions(sessions.filter(s => s.id !== sessionId));
-  //   } catch (e) {
-  //     Alert.alert('Error', 'Failed to log out from session.');
-  //   }
-  //   setLoggingOut(false);
-  // };
+   const handleLogoutSession = async (sessionId) => {
+     setLoggingOut(true);
+     try {
+       await logoutSession(sessionId);
+       setSessions(sessions.filter(s => s.id !== sessionId));
+     } catch (e) {
+       Alert.alert('Error', 'Failed to log out from session.');
+     }
+     setLoggingOut(false);
+   };
 
-  // const handleLogoutAll = async () => {
-  //   setLoggingOut(true);
-  //   try {
-  //     await logoutAllSessions();
-  //     setSessions([]);
-  //   } catch (e) {
-  //     Alert.alert('Error', 'Failed to log out from all sessions.');
-  //   }
-  //   setLoggingOut(false);
-  // };
+   const handleLogoutAll = async () => {
+     setLoggingOut(true);
+     try {
+       await logoutAllSessions();
+       setSessions([]);
+     } catch (e) {
+       Alert.alert('Error', 'Failed to log out from all sessions.');
+     }
+     setLoggingOut(false);
+   };
 
   if (loading) return <ActivityIndicator style={{ marginTop: 40 }} />;
   if (error) return <Text style={{ color: 'red', margin: 20 }}>{error}</Text>;
 
+  // If backend endpoints are not available, show placeholder message only
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Active Sessions</Text>

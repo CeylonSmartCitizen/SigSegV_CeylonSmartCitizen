@@ -13,7 +13,7 @@ export async function setCache(key, data, ttl = DEFAULT_TTL) {
   try {
     await AsyncStorage.setItem(CACHE_PREFIX + key, JSON.stringify(item));
   } catch (e) {
-    // Handle error (optional: log or report)
+    //Handle error (optional: log or report)
   }
 }
 

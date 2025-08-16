@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Button, ActivityIndicator, Alert } from 'react-native';
-// import { exportUserData } from '../../utility/api'; // Uncomment when backend endpoint is ready
+import { exportUserData } from '../../utility/api'; // Uncomment when backend endpoint is ready
 
 export default function ExportData() {
   const [loading, setLoading] = useState(false);
@@ -11,7 +11,7 @@ export default function ExportData() {
     setMessage('');
     try {
       // Uncomment the following lines when backend endpoint is available
-      // const res = await exportUserData();
+       const res = await exportUserData();
       // setMessage('Your data export is ready. Check your email or download link.');
       Alert.alert(
         'Data Export',
