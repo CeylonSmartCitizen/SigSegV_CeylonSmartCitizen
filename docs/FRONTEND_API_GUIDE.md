@@ -1,14 +1,13 @@
-# Ceylon Smart Citizen API Gateway - Frontend Integration Guide
+# Ceylon Smart Citizen API Gateway - Complete API Reference
 
 ## 📋 Table of Contents
 - [🚀 Getting Started](#-getting-started)
 - [🔐 Authentication](#-authentication)
-- [🏥 System Endpoints](#-system-endpoints)
-- [👤 User Authentication Endpoints](#-user-authentication-endpoints)
-- [📄 Support Services](#-support-services)
-- [📅 Appointment Services](#-appointment-services)
+- [👤 Authentication Service](#-authentication-service)
+- [📅 Appointment Service](#-appointment-service)
+- [🛠️ Support Services](#-support-services)
 - [❌ Error Handling](#-error-handling)
-- [💡 Best Practices](#-best-practices)
+- [📊 Response Formats](#-response-formats)
 
 ---
 
@@ -17,39 +16,25 @@
 ### Base URL
 ```
 Development: http://localhost:3000
+Production: https://your-domain.com
 ```
+
+### Architecture Overview
+The Ceylon Smart Citizen API Gateway provides access to multiple microservices:
+
+- **🔐 Authentication Service** (`/api/auth/*`) - User authentication and profile management
+- **📅 Appointment Service** (`/api/appointments/*`) - Government appointment booking system
+- **🛠️ Support Services** (`/api/support/*`) - Notifications, queues, officers, documents, audit
 
 ### Required Headers
-```javascript
-{
-  'Content-Type': 'application/json',
-  'Accept': 'application/json',
-  'Authorization': 'Bearer <your-jwt-token>' // For protected endpoints
-}
+```http
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer <your-jwt-token>  # For protected endpoints
 ```
 
----
-
-## 🔐 Authentication
-
-The API uses JWT (JSON Web Tokens) for authentication. There are two types of endpoints:
-
-- **🟢 Public Endpoints**: No authentication required
-- **🔒 Protected Endpoints**: Require valid JWT token in Authorization header
-
-### Authentication Flow
-1. Register a new user or login with existing credentials
-2. Store the received `accessToken` securely (localStorage/sessionStorage)
-3. Include the token in the `Authorization` header for protected endpoints
-4. Refresh the token when it expires using the `refreshToken`
-
----
-
-## 🏥 System Endpoints
-
-### Health Check
-**🟢 PUBLIC**
-```
+### System Health Check
+```http
 GET /health
 ```
 
@@ -57,14 +42,13 @@ GET /health
 ```json
 {
   "status": "healthy",
-  "timestamp": "2025-08-16T14:05:26.634Z",
+  "timestamp": "2025-08-16T16:30:00.000Z",
   "service": "Ceylon Smart Citizen API Gateway"
 }
 ```
 
-### API Test
-**🟢 PUBLIC**
-```
+### API Test Endpoint
+```http
 GET /api/test
 ```
 
@@ -77,75 +61,117 @@ GET /api/test
 
 ---
 
-## 👤 User Authentication Endpoints
+## 🔐 Authentication
 
-All authentication endpoints are prefixed with `/api/auth`
+### Authentication Types
+- **🟢 Public Endpoints**: No authentication required (registration, login, health checks)
+- **🔒 Protected Endpoints**: Require valid JWT token in Authorization header
 
-### 1. User Registration
-**🟢 PUBLIC**
+### Token Management
+- **Access Token**: Valid for 24 hours, used for API access
+- **Refresh Token**: Valid for 7 days, used to get new access tokens
+
+---
+
+## 👤 Authentication Service
+
+Base Path: `/api/auth`
+
+### Service Health
+```http
+GET /api/auth/health
 ```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Ceylon Auth Service is healthy",
+  "timestamp": "2025-08-16T16:30:00.000Z",
+  "version": "1.0.0",
+  "features": [
+    "JWT Authentication",
+    "NIC Validation",
+    "Rate Limiting",
+    "Token Blacklisting",
+    "Session Management",
+    "Multi-language Support"
+  ]
+}
+```
+
+### User Registration
+```http
 POST /api/auth/register
 ```
 
 **Request Body:**
 ```json
 {
-  "email": "user@example.com",
-  "password": "SecurePassword123!",
   "firstName": "John",
   "lastName": "Doe",
-  "nicNumber": "123456789V",
-  "phone": "+94771234567",
-  "dateOfBirth": "1990-05-15",
-  "address": "123 Main Street, Colombo"
+  "email": "john.doe@example.com",
+  "password": "SecurePassword123!",
+  "phone": "0771234567",
+  "nicNumber": "199512345678",
+  "address": "123 Main Street, Colombo",
+  "dateOfBirth": "1995-01-01",
+  "gender": "Male",
+  "preferredLanguage": "en",
+  "emergencyContact": {
+    "name": "Jane Doe",
+    "phone": "0777654321",
+    "relationship": "Sister"
+  }
 }
 ```
 
-**Response (Success):**
+**Response:**
 ```json
 {
   "success": true,
-  "message": "User registered successfully",
+  "message": "Registration successful",
   "data": {
     "user": {
-      "id": "user-id",
-      "email": "user@example.com",
+      "id": "83744ad5-abe1-4460-9b5e-d6032324bf6d",
+      "email": "john.doe@example.com",
       "firstName": "John",
       "lastName": "Doe",
+      "nicNumber": "199512345678",
       "role": "citizen"
     },
     "tokens": {
       "accessToken": "eyJhbGciOiJIUzI1NiIs...",
       "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+      "tokenType": "Bearer",
       "expiresIn": 86400
     }
   }
 }
 ```
 
-### 2. User Login
-**🟢 PUBLIC**
-```
+### User Login
+```http
 POST /api/auth/login
 ```
 
 **Request Body:**
 ```json
 {
-  "email": "user@example.com",
+  "email": "john.doe@example.com",
   "password": "SecurePassword123!"
 }
 ```
 
-**Response (Success):**
+**Response:**
 ```json
 {
   "success": true,
   "message": "Login successful",
   "data": {
     "user": {
-      "id": "user-id",
-      "email": "user@example.com",
+      "id": "83744ad5-abe1-4460-9b5e-d6032324bf6d",
+      "email": "john.doe@example.com",
       "firstName": "John",
       "lastName": "Doe",
       "role": "citizen"
@@ -153,15 +179,15 @@ POST /api/auth/login
     "tokens": {
       "accessToken": "eyJhbGciOiJIUzI1NiIs...",
       "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+      "tokenType": "Bearer",
       "expiresIn": 86400
     }
   }
 }
 ```
 
-### 3. Refresh Token
-**🟢 PUBLIC**
-```
+### Refresh Token
+```http
 POST /api/auth/refresh-token
 ```
 
@@ -172,48 +198,55 @@ POST /api/auth/refresh-token
 }
 ```
 
-**Response (Success):**
+**Response:**
 ```json
 {
   "success": true,
+  "message": "Tokens refreshed successfully",
   "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
-    "expiresIn": 86400
-  }
-}
-```
-
-### 4. Get User Profile
-**🔒 PROTECTED**
-```
-GET /api/auth/profile
-Authorization: Bearer <access-token>
-```
-
-**Response (Success):**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "user-id",
-      "email": "user@example.com",
-      "firstName": "John",
-      "lastName": "Doe",
-      "nicNumber": "123456789V",
-      "phone": "+94771234567",
-      "role": "citizen",
-      "isActive": true,
-      "createdAt": "2025-01-01T00:00:00.000Z"
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIs...",
+      "tokenType": "Bearer",
+      "expiresIn": 86400
     }
   }
 }
 ```
 
-### 5. Update User Profile
-**🔒 PROTECTED**
+### Get User Profile 🔒
+```http
+GET /api/auth/profile
+Authorization: Bearer <access-token>
 ```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Profile retrieved successfully",
+  "data": {
+    "user": {
+      "id": "83744ad5-abe1-4460-9b5e-d6032324bf6d",
+      "email": "john.doe@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "nicNumber": "199512345678",
+      "phone": "0771234567",
+      "address": "123 Main Street, Colombo",
+      "dateOfBirth": "1995-01-01",
+      "gender": "Male",
+      "role": "citizen",
+      "isActive": true,
+      "createdAt": "2025-08-16T10:00:00.000Z",
+      "updatedAt": "2025-08-16T10:00:00.000Z"
+    }
+  }
+}
+```
+
+### Update User Profile 🔒
+```http
 PUT /api/auth/profile
 Authorization: Bearer <access-token>
 ```
@@ -223,14 +256,58 @@ Authorization: Bearer <access-token>
 {
   "firstName": "John",
   "lastName": "Smith",
-  "phone": "+94771234567",
+  "phone": "0771234568",
   "address": "456 New Street, Colombo"
 }
 ```
 
-### 6. Change Password
-**🔒 PROTECTED**
+### Get User Preferences 🔒
+```http
+GET /api/auth/preferences
+Authorization: Bearer <access-token>
 ```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Preferences retrieved successfully",
+  "data": {
+    "preferences": {
+      "language": "en",
+      "notifications": {
+        "email": true,
+        "sms": false,
+        "push": true
+      },
+      "theme": "light",
+      "timezone": "Asia/Colombo"
+    }
+  }
+}
+```
+
+### Update User Preferences 🔒
+```http
+PUT /api/auth/preferences
+Authorization: Bearer <access-token>
+```
+
+**Request Body:**
+```json
+{
+  "language": "si",
+  "notifications": {
+    "email": true,
+    "sms": true,
+    "push": false
+  },
+  "theme": "dark"
+}
+```
+
+### Change Password 🔒
+```http
 PUT /api/auth/change-password
 Authorization: Bearer <access-token>
 ```
@@ -239,457 +316,303 @@ Authorization: Bearer <access-token>
 ```json
 {
   "currentPassword": "OldPassword123!",
-  "newPassword": "NewPassword123!"
+  "newPassword": "NewPassword456!",
+  "confirmPassword": "NewPassword456!"
 }
 ```
 
-### 7. User Preferences
-**🔒 PROTECTED**
-
-**Get Preferences:**
-```
-GET /api/auth/preferences
-Authorization: Bearer <access-token>
-```
-
-**Update Preferences:**
-```
-PUT /api/auth/preferences
-Authorization: Bearer <access-token>
-```
-
-**Request Body:**
-```json
-{
-  "language": "en",
-  "notifications": {
-    "email": true,
-    "sms": false,
-    "push": true
-  },
-  "timezone": "Asia/Colombo"
-}
-```
-
-### 8. Logout
-**🔒 PROTECTED**
-```
+### Logout 🔒
+```http
 POST /api/auth/logout
 Authorization: Bearer <access-token>
 ```
 
-### 9. Global Logout (All Sessions)
-**🔒 PROTECTED**
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Logout successful"
+}
 ```
+
+### Global Logout 🔒
+```http
 POST /api/auth/global-logout
 Authorization: Bearer <access-token>
 ```
 
-### 10. Password Reset
-**🟢 PUBLIC**
-
-**Request Reset:**
-```
-POST /api/auth/forgot-password
-```
+**Response:**
 ```json
 {
-  "email": "user@example.com"
-}
-```
-
-**Reset Password:**
-```
-POST /api/auth/reset-password
-```
-```json
-{
-  "token": "reset-token-from-email",
-  "password": "NewPassword123!"
+  "success": true,
+  "message": "Global logout successful"
 }
 ```
 
 ---
 
-## 📄 Support Services
+## 📅 Appointment Service
 
-All support service endpoints require authentication and are prefixed with `/api/support`
+Base Path: `/api/appointments`
+**Note**: All appointment endpoints require authentication 🔒
 
-### 📢 Notifications
-
-#### Get All Notifications
-**🔒 PROTECTED**
-```
-GET /api/support/notifications/
+### Service Health 🔒
+```http
+GET /api/appointments/health
 Authorization: Bearer <access-token>
 ```
 
-#### Get User Notifications
-**🔒 PROTECTED**
-```
-GET /api/support/notifications/user/:userId
-Authorization: Bearer <access-token>
-```
+### Departments
 
-#### Get Specific Notification
-**🔒 PROTECTED**
-```
-GET /api/support/notifications/:id
-Authorization: Bearer <access-token>
-```
-
-**Response:**
-```json
-{
-  "id": 1,
-  "userId": "testuser2",
-  "message": "Your appointment has been confirmed",
-  "type": "info",
-  "title": "Appointment Confirmation",
-  "isRead": false,
-  "createdAt": "2025-08-16T13:35:42.273Z",
-  "updatedAt": "2025-08-16T13:35:42.273Z",
-  "readAt": null
-}
-```
-
-#### Create Notification
-**🔒 PROTECTED**
-```
-POST /api/support/notifications/
-Authorization: Bearer <access-token>
-```
-
-**Request Body:**
-```json
-{
-  "userId": "user-id",
-  "title": "New Notification",
-  "message": "This is a notification message",
-  "type": "info"
-}
-```
-
-#### Mark Notification as Read
-**🔒 PROTECTED**
-```
-PATCH /api/support/notifications/:id/read
-Authorization: Bearer <access-token>
-```
-
-#### Mark All User Notifications as Read
-**🔒 PROTECTED**
-```
-PATCH /api/support/notifications/user/:userId/read-all
-Authorization: Bearer <access-token>
-```
-
-#### Delete Notification
-**🔒 PROTECTED**
-```
-DELETE /api/support/notifications/:id
-Authorization: Bearer <access-token>
-```
-
-### 🏢 Officers
-
-#### Get Officers Information
-**🔒 PROTECTED**
-```
-GET /api/support/officers/
-Authorization: Bearer <access-token>
-```
-
-**Response:**
-```json
-{
-  "message": "Officer Management API is working",
-  "endpoints": [
-    "/officers",
-    "/officers/:officerId", 
-    "/sessions/:sessionId/officer-status"
-  ],
-  "version": "1.0.0"
-}
-```
-
-#### Get All Officers
-**🔒 PROTECTED**
-```
-GET /api/support/officers/officers
-Authorization: Bearer <access-token>
-```
-
-#### Get Specific Officer
-**🔒 PROTECTED**
-```
-GET /api/support/officers/officers/:officerId
-Authorization: Bearer <access-token>
-```
-
-#### Get Officer Status for Session
-**🔒 PROTECTED**
-```
-GET /api/support/officers/sessions/:sessionId/officer-status
-Authorization: Bearer <access-token>
-```
-
-#### Create Officer
-**🔒 PROTECTED**
-```
-POST /api/support/officers/officers
-Authorization: Bearer <access-token>
-```
-
-### 📋 Queue Management
-
-#### Get Queue Information
-**🔒 PROTECTED**
-```
-GET /api/support/queues/
-Authorization: Bearer <access-token>
-```
-
-**Response:**
-```json
-{
-  "message": "Queue Management API is working",
-  "endpoints": [
-    "/queues",
-    "/sessions", 
-    "/queues/:queueId/jobs",
-    "/sessions/:sessionId"
-  ],
-  "version": "1.0.0"
-}
-```
-
-#### Get All Queues
-**🔒 PROTECTED**
-```
-GET /api/support/queues/queues
-Authorization: Bearer <access-token>
-```
-
-#### Get Queue Jobs
-**🔒 PROTECTED**
-```
-GET /api/support/queues/queues/:queueId/jobs
-Authorization: Bearer <access-token>
-```
-
-#### Add Job to Queue
-**🔒 PROTECTED**
-```
-POST /api/support/queues/queues/:queueId/jobs
-Authorization: Bearer <access-token>
-```
-
-#### Get Sessions
-**🔒 PROTECTED**
-```
-GET /api/support/queues/sessions
-Authorization: Bearer <access-token>
-```
-
-#### Get Specific Session
-**🔒 PROTECTED**
-```
-GET /api/support/queues/sessions/:sessionId
-Authorization: Bearer <access-token>
-```
-
-#### Create Session
-**🔒 PROTECTED**
-```
-POST /api/support/queues/sessions
-Authorization: Bearer <access-token>
-```
-
-### 📁 Document Management
-
-#### Get Documents List
-**🔒 PROTECTED**
-```
-GET /api/support/documents/list
-Authorization: Bearer <access-token>
-```
-
-#### Get Document
-**🔒 PROTECTED**
-```
-GET /api/support/documents/:id
-Authorization: Bearer <access-token>
-```
-
-#### Get Document Status
-**🔒 PROTECTED**
-```
-GET /api/support/documents/:id/status
-Authorization: Bearer <access-token>
-```
-
-#### Upload Document
-**🔒 PROTECTED**
-```
-POST /api/support/documents/upload
-Authorization: Bearer <access-token>
-Content-Type: multipart/form-data
-```
-
-#### Delete Document
-**🔒 PROTECTED**
-```
-DELETE /api/support/documents/:id
-Authorization: Bearer <access-token>
-```
-
-### 📊 Audit Logs
-
-#### Get Audit Information
-**🔒 PROTECTED**
-```
-GET /api/support/audit/
-Authorization: Bearer <access-token>
-```
-
-#### Get All Audit Logs
-**🔒 PROTECTED**
-```
-GET /api/support/audit/audit-logs
-Authorization: Bearer <access-token>
-```
-
-#### Get Specific Audit Log
-**🔒 PROTECTED**
-```
-GET /api/support/audit/audit-logs/:id
-Authorization: Bearer <access-token>
-```
-
-#### Get User Audit Logs
-**🔒 PROTECTED**
-```
-GET /api/support/audit/audit-logs/user/:userId
-Authorization: Bearer <access-token>
-```
-
----
-
-## 📅 Appointment Services
-
-All appointment endpoints require authentication and are prefixed with `/api/appointments`
-
-### 📋 Appointments
-
-#### Get Appointments
-**🔒 PROTECTED**
-```
-GET /api/appointments/appointments
-Authorization: Bearer <access-token>
-```
-
-#### Get Specific Appointment
-**🔒 PROTECTED**
-```
-GET /api/appointments/appointments/:id
-Authorization: Bearer <access-token>
-```
-
-#### Create Appointment
-**🔒 PROTECTED**
-```
-POST /api/appointments/appointments
-Authorization: Bearer <access-token>
-```
-
-**Request Body:**
-```json
-{
-  "serviceId": "service-id",
-  "departmentId": "department-id",
-  "citizenId": "citizen-id",
-  "appointmentDate": "2025-08-20",
-  "appointmentTime": "10:00",
-  "description": "Appointment description"
-}
-```
-
-#### Update Appointment
-**🔒 PROTECTED**
-```
-PUT /api/appointments/appointments/:id
-Authorization: Bearer <access-token>
-```
-
-#### Cancel Appointment
-**🔒 PROTECTED**
-```
-DELETE /api/appointments/appointments/:id
-Authorization: Bearer <access-token>
-```
-
-### 🏛️ Departments
-
-#### Get All Departments
-**🔒 PROTECTED**
-```
+#### List Departments 🔒
+```http
 GET /api/appointments/departments
 Authorization: Bearer <access-token>
 ```
 
-#### Get Specific Department
-**🔒 PROTECTED**
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Departments retrieved successfully",
+  "data": {
+    "departments": [
+      {
+        "id": "dept-001",
+        "name": "Immigration Department",
+        "nameEn": "Immigration Department",
+        "nameSi": "සංක්‍රමණ දෙපාර්තමේන්තුව",
+        "nameTa": "குடியேற்ற துறை",
+        "description": "Passport and visa services",
+        "isActive": true
+      }
+    ]
+  }
+}
 ```
-GET /api/appointments/departments/:id
+
+#### Create Department 🔒
+```http
+POST /api/appointments/departments
 Authorization: Bearer <access-token>
 ```
 
-### 👮 Officers
-
-#### Get All Officers
-**🔒 PROTECTED**
-```
-GET /api/appointments/officers
-Authorization: Bearer <access-token>
-```
-
-#### Get Specific Officer
-**🔒 PROTECTED**
-```
-GET /api/appointments/officers/:id
-Authorization: Bearer <access-token>
+**Request Body:**
+```json
+{
+  "name": "Department Name",
+  "nameEn": "Department Name",
+  "nameSi": "දෙපාර්තමේන්තු නාමය",
+  "nameTa": "துறை பெயர்",
+  "description": "Department description"
+}
 ```
 
-### 🔄 Queue
+### Services
 
-#### Get Queue Status
-**🔒 PROTECTED**
-```
-GET /api/appointments/queue
-Authorization: Bearer <access-token>
-```
-
-#### Join Queue
-**🔒 PROTECTED**
-```
-POST /api/appointments/queue
-Authorization: Bearer <access-token>
-```
-
-### 🛠️ Services
-
-#### Get All Services
-**🔒 PROTECTED**
-```
+#### List Services 🔒
+```http
 GET /api/appointments/services
 Authorization: Bearer <access-token>
 ```
 
-#### Get Specific Service
-**🔒 PROTECTED**
+#### List Services by Department 🔒
+```http
+GET /api/appointments/services/department/{departmentId}
+Authorization: Bearer <access-token>
 ```
-GET /api/appointments/services/:id
+
+#### Create Service 🔒
+```http
+POST /api/appointments/services
+Authorization: Bearer <access-token>
+```
+
+**Request Body:**
+```json
+{
+  "departmentId": "dept-001",
+  "name": "Passport Application",
+  "nameEn": "Passport Application",
+  "nameSi": "පාස්පෝට් අයදුම්පත",
+  "nameTa": "கடவுச்சீட்டு விண்ணப்பம்",
+  "description": "New passport application service",
+  "duration": 30,
+  "fee": 1500.00
+}
+```
+
+### Officers
+
+#### List Officers 🔒
+```http
+GET /api/appointments/officers
+Authorization: Bearer <access-token>
+```
+
+#### List Officers by Department 🔒
+```http
+GET /api/appointments/officers/department/{departmentId}
+Authorization: Bearer <access-token>
+```
+
+### Appointments
+
+#### List User Appointments 🔒
+```http
+GET /api/appointments
+Authorization: Bearer <access-token>
+```
+
+#### Get Appointment Details 🔒
+```http
+GET /api/appointments/{appointmentId}
+Authorization: Bearer <access-token>
+```
+
+#### Create Appointment 🔒
+```http
+POST /api/appointments
+Authorization: Bearer <access-token>
+```
+
+**Request Body:**
+```json
+{
+  "departmentId": "dept-001",
+  "serviceId": "service-001",
+  "officerId": "officer-001",
+  "appointmentDate": "2025-08-20",
+  "appointmentTime": "10:00",
+  "notes": "First-time passport application"
+}
+```
+
+#### Update Appointment 🔒
+```http
+PUT /api/appointments/{appointmentId}
+Authorization: Bearer <access-token>
+```
+
+#### Cancel Appointment 🔒
+```http
+DELETE /api/appointments/{appointmentId}
+Authorization: Bearer <access-token>
+```
+
+### Queue Management
+
+#### Get Queue Status 🔒
+```http
+GET /api/appointments/queue
+Authorization: Bearer <access-token>
+```
+
+#### Join Queue 🔒
+```http
+POST /api/appointments/queue
+Authorization: Bearer <access-token>
+```
+
+#### Leave Queue 🔒
+```http
+DELETE /api/appointments/queue/{queueId}
+Authorization: Bearer <access-token>
+```
+
+---
+
+## 🛠️ Support Services
+
+Base Path: `/api/support`
+**Note**: All support endpoints require authentication 🔒
+
+### Notifications
+
+#### List User Notifications 🔒
+```http
+GET /api/support/notifications
+Authorization: Bearer <access-token>
+```
+
+#### Mark Notification as Read 🔒
+```http
+PUT /api/support/notifications/{notificationId}/read
+Authorization: Bearer <access-token>
+```
+
+#### Delete Notification 🔒
+```http
+DELETE /api/support/notifications/{notificationId}
+Authorization: Bearer <access-token>
+```
+
+### Documents
+
+#### List User Documents 🔒
+```http
+GET /api/support/documents
+Authorization: Bearer <access-token>
+```
+
+#### Upload Document 🔒
+```http
+POST /api/support/documents
+Authorization: Bearer <access-token>
+Content-Type: multipart/form-data
+```
+
+#### Download Document 🔒
+```http
+GET /api/support/documents/{documentId}
+Authorization: Bearer <access-token>
+```
+
+#### Delete Document 🔒
+```http
+DELETE /api/support/documents/{documentId}
+Authorization: Bearer <access-token>
+```
+
+### Officers
+
+#### List Available Officers 🔒
+```http
+GET /api/support/officers
+Authorization: Bearer <access-token>
+```
+
+#### Get Officer Details 🔒
+```http
+GET /api/support/officers/{officerId}
+Authorization: Bearer <access-token>
+```
+
+### Queues
+
+#### List Active Queues 🔒
+```http
+GET /api/support/queues
+Authorization: Bearer <access-token>
+```
+
+#### Get Queue Details 🔒
+```http
+GET /api/support/queues/{queueId}
+Authorization: Bearer <access-token>
+```
+
+### Audit
+
+#### List User Activity 🔒
+```http
+GET /api/support/audit
+Authorization: Bearer <access-token>
+```
+
+#### Get Activity Details 🔒
+```http
+GET /api/support/audit/{activityId}
 Authorization: Bearer <access-token>
 ```
 
@@ -703,188 +626,151 @@ Authorization: Bearer <access-token>
   "success": false,
   "message": "Error description",
   "code": "ERROR_CODE",
-  "field": "fieldName" // Optional, for validation errors
+  "errors": {
+    "field": "Field-specific error message"
+  }
 }
 ```
 
 ### Common HTTP Status Codes
 
-| Status Code | Description | When it occurs |
+| Status Code | Description | When It Occurs |
 |-------------|-------------|----------------|
-| `200` | OK | Successful request |
+| `200` | Success | Request completed successfully |
 | `201` | Created | Resource created successfully |
-| `400` | Bad Request | Invalid request data |
-| `401` | Unauthorized | Authentication required or invalid token |
-| `403` | Forbidden | Access denied |
-| `404` | Not Found | Resource not found |
+| `400` | Bad Request | Invalid request data or validation failed |
+| `401` | Unauthorized | Missing or invalid authentication token |
+| `403` | Forbidden | Valid token but insufficient permissions |
+| `404` | Not Found | Requested resource doesn't exist |
+| `409` | Conflict | Resource already exists (e.g., duplicate email) |
 | `429` | Too Many Requests | Rate limit exceeded |
-| `500` | Internal Server Error | Server error |
+| `500` | Internal Server Error | Server-side error occurred |
 
-### Authentication Errors
+### Common Error Codes
 
-**No Token Provided:**
+#### Authentication Errors
+- `TOKEN_REQUIRED` - No authorization header provided
+- `INVALID_TOKEN` - Malformed or invalid JWT token
+- `TOKEN_EXPIRED` - JWT token has expired
+- `TOKEN_BLACKLISTED` - Token has been invalidated
+- `USER_NOT_FOUND` - User account doesn't exist
+- `INVALID_CREDENTIALS` - Wrong email/password combination
+
+#### Validation Errors
+- `VALIDATION_ERROR` - Request data validation failed
+- `DUPLICATE_EMAIL` - Email address already registered
+- `DUPLICATE_NIC` - NIC number already registered
+- `WEAK_PASSWORD` - Password doesn't meet security requirements
+- `INVALID_NIC` - NIC number format is invalid
+
+#### Rate Limiting Errors
+- `TOO_MANY_REQUESTS` - General rate limit exceeded
+- `TOO_MANY_REGISTRATIONS` - Registration attempts exceeded
+- `TOO_MANY_LOGIN_ATTEMPTS` - Login attempts exceeded
+
+### Example Error Responses
+
+#### Validation Error
 ```json
 {
   "success": false,
-  "message": "No token provided"
+  "message": "Validation failed",
+  "code": "VALIDATION_ERROR",
+  "errors": {
+    "email": "Email is required",
+    "password": "Password must be at least 8 characters"
+  }
 }
 ```
 
-**Invalid Token:**
+#### Authentication Error
 ```json
 {
   "success": false,
-  "message": "Invalid token"
+  "message": "Invalid or expired token",
+  "code": "TOKEN_EXPIRED"
 }
 ```
 
-**Token Expired:**
+#### Rate Limit Error
 ```json
 {
   "success": false,
-  "message": "Invalid or expired token"
-}
-```
-
-### Validation Errors
-
-**Example Registration Error:**
-```json
-{
-  "success": false,
-  "message": "This email is already registered",
-  "code": "DUPLICATE_EMAIL",
-  "field": "email"
+  "message": "Too many login attempts, please try again later",
+  "code": "TOO_MANY_REQUESTS"
 }
 ```
 
 ---
 
-## 💡 Best Practices
+## 📊 Response Formats
 
-### 1. Token Management
-```javascript
-// Store tokens securely
-localStorage.setItem('accessToken', data.tokens.accessToken);
-localStorage.setItem('refreshToken', data.tokens.refreshToken);
-
-// Include token in requests
-const token = localStorage.getItem('accessToken');
-const headers = {
-  'Authorization': `Bearer ${token}`,
-  'Content-Type': 'application/json'
-};
-```
-
-### 2. Error Handling
-```javascript
-try {
-  const response = await fetch('/api/auth/profile', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message);
-  }
-  
-  const data = await response.json();
-  return data;
-} catch (error) {
-  console.error('API Error:', error.message);
-  // Handle error appropriately
-}
-```
-
-### 3. Token Refresh
-```javascript
-async function refreshToken() {
-  const refreshToken = localStorage.getItem('refreshToken');
-  
-  try {
-    const response = await fetch('/api/auth/refresh-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      localStorage.setItem('accessToken', data.data.accessToken);
-      localStorage.setItem('refreshToken', data.data.refreshToken);
-      return data.data.accessToken;
-    }
-  } catch (error) {
-    // Redirect to login
-    window.location.href = '/login';
+### Success Response Structure
+```json
+{
+  "success": true,
+  "message": "Operation description",
+  "data": {
+    // Response data object
+  },
+  "meta": {
+    // Optional metadata (pagination, etc.)
+    "total": 100,
+    "page": 1,
+    "limit": 20
   }
 }
 ```
 
-### 4. Automatic Token Refresh
-```javascript
-// Axios interceptor example
-axios.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      const newToken = await refreshToken();
-      if (newToken) {
-        error.config.headers['Authorization'] = `Bearer ${newToken}`;
-        return axios.request(error.config);
-      }
+### Pagination
+For endpoints that return lists, pagination is handled via query parameters:
+
+```http
+GET /api/endpoint?page=1&limit=20&sort=createdAt&order=desc
+```
+
+**Pagination Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [...],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalItems": 100,
+      "itemsPerPage": 20,
+      "hasNextPage": true,
+      "hasPrevPage": false
     }
-    return Promise.reject(error);
   }
-);
+}
 ```
 
-### 5. Loading States
-```javascript
-const [loading, setLoading] = useState(false);
-const [error, setError] = useState(null);
-
-const fetchData = async () => {
-  setLoading(true);
-  setError(null);
-  
-  try {
-    const data = await apiCall();
-    // Handle success
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+### Date/Time Format
+All timestamps are in ISO 8601 format (UTC):
+```
+2025-08-16T16:30:00.000Z
 ```
 
-### 6. Rate Limiting
-```javascript
-// Handle rate limiting gracefully
-if (error.status === 429) {
-  const retryAfter = error.headers['retry-after'] || 60;
-  setTimeout(() => {
-    // Retry request
-  }, retryAfter * 1000);
+### Multilingual Content
+Content supports three languages:
+- `en` - English
+- `si` - Sinhala  
+- `ta` - Tamil
+
+Objects with multilingual content include language-specific fields:
+```json
+{
+  "name": "Default name",
+  "nameEn": "English name",
+  "nameSi": "සිංහල නම",
+  "nameTa": "தமிழ் பெயர்"
 }
 ```
 
 ---
 
-## 📞 Support
-
-For additional support or questions about the API:
-- **Development Team**: [dev-team@ceylonsmartcitizen.lk]
-- **Documentation**: Check this guide and inline code comments
-- **Issues**: Report bugs through the project's issue tracker
-
----
-
-**Last Updated**: August 16, 2025
-**Version**: 1.0.0
-**API Gateway**: Ceylon Smart Citizen Platform
+**API Gateway Version**: 1.0.0  
+**Last Updated**: August 16, 2025  
+**Status**: ✅ All endpoints tested and functional

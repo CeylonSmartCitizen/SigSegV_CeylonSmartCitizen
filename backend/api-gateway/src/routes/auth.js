@@ -17,7 +17,7 @@ try {
 }
 
 // Base URL for the auth service (update if needed)
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3000';
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 
 
 // Helper to pick only essential headers
@@ -33,7 +33,8 @@ function getEssentialHeaders(req) {
 // Proxy registration
 router.post('/register', async (req, res) => {
   try {
-    const response = await axios.post(`${AUTH_SERVICE_URL}/register`, req.body, { headers: getEssentialHeaders(req) });
+    // Forward to /api/auth/register on the auth service
+    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/register`, req.body, { headers: getEssentialHeaders(req) });
     res.status(response.status).json(response.data);
   } catch (error) {
     if (error.response) {
@@ -47,7 +48,7 @@ router.post('/register', async (req, res) => {
 // Proxy login
 router.post('/login', async (req, res) => {
   try {
-    const response = await axios.post(`${AUTH_SERVICE_URL}/login`, req.body, { headers: getEssentialHeaders(req) });
+    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/login`, req.body, { headers: getEssentialHeaders(req) });
     res.status(response.status).json(response.data);
   } catch (error) {
     if (error.response) {
@@ -61,7 +62,7 @@ router.post('/login', async (req, res) => {
 // Proxy refresh token
 router.post('/refresh-token', async (req, res) => {
   try {
-    const response = await axios.post(`${AUTH_SERVICE_URL}/refresh-token`, req.body, { headers: getEssentialHeaders(req) });
+    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/refresh-token`, req.body, { headers: getEssentialHeaders(req) });
     res.status(response.status).json(response.data);
   } catch (error) {
     if (error.response) {
@@ -76,7 +77,7 @@ router.post('/refresh-token', async (req, res) => {
 // Proxy get profile (protected)
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const response = await axios.get(`${AUTH_SERVICE_URL}/profile`, {
+    const response = await axios.get(`${AUTH_SERVICE_URL}/api/auth/profile`, {
       headers: getEssentialHeaders(req)
     });
     res.status(response.status).json(response.data);
@@ -92,7 +93,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // Proxy update profile (protected)
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
-    const response = await axios.put(`${AUTH_SERVICE_URL}/profile`, req.body, {
+    const response = await axios.put(`${AUTH_SERVICE_URL}/api/auth/profile`, req.body, {
       headers: getEssentialHeaders(req)
     });
     res.status(response.status).json(response.data);
@@ -108,7 +109,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
 // Proxy change password (protected)
 router.put('/change-password', authenticateToken, async (req, res) => {
   try {
-    const response = await axios.put(`${AUTH_SERVICE_URL}/change-password`, req.body, {
+    const response = await axios.put(`${AUTH_SERVICE_URL}/api/auth/change-password`, req.body, {
       headers: getEssentialHeaders(req)
     });
     res.status(response.status).json(response.data);
@@ -124,7 +125,7 @@ router.put('/change-password', authenticateToken, async (req, res) => {
 // Proxy get preferences (protected)
 router.get('/preferences', authenticateToken, async (req, res) => {
   try {
-    const response = await axios.get(`${AUTH_SERVICE_URL}/preferences`, {
+    const response = await axios.get(`${AUTH_SERVICE_URL}/api/auth/preferences`, {
       headers: getEssentialHeaders(req)
     });
     res.status(response.status).json(response.data);
@@ -140,7 +141,7 @@ router.get('/preferences', authenticateToken, async (req, res) => {
 // Proxy update preferences (protected)
 router.put('/preferences', authenticateToken, async (req, res) => {
   try {
-    const response = await axios.put(`${AUTH_SERVICE_URL}/preferences`, req.body, {
+    const response = await axios.put(`${AUTH_SERVICE_URL}/api/auth/preferences`, req.body, {
       headers: getEssentialHeaders(req)
     });
     res.status(response.status).json(response.data);
@@ -156,7 +157,7 @@ router.put('/preferences', authenticateToken, async (req, res) => {
 // Proxy logout (protected)
 router.post('/logout', authenticateToken, async (req, res) => {
   try {
-    const response = await axios.post(`${AUTH_SERVICE_URL}/logout`, req.body, {
+    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/logout`, req.body, {
       headers: getEssentialHeaders(req)
     });
     res.status(response.status).json(response.data);
@@ -172,7 +173,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
 // Proxy global logout (protected)
 router.post('/global-logout', authenticateToken, async (req, res) => {
   try {
-    const response = await axios.post(`${AUTH_SERVICE_URL}/global-logout`, req.body, {
+    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/global-logout`, req.body, {
       headers: getEssentialHeaders(req)
     });
     res.status(response.status).json(response.data);
@@ -188,7 +189,7 @@ router.post('/global-logout', authenticateToken, async (req, res) => {
 // Proxy health check
 router.get('/health', async (req, res) => {
   try {
-    const response = await axios.get(`${AUTH_SERVICE_URL}/health`, { headers: getEssentialHeaders(req) });
+    const response = await axios.get(`${AUTH_SERVICE_URL}/api/auth/health`, { headers: getEssentialHeaders(req) });
     res.status(response.status).json(response.data);
   } catch (error) {
     if (error.response) {
