@@ -20,9 +20,14 @@ app.get('/health', (req, res) => {
 });
 
 
+
 // Appointment service proxy routes
 const appointmentRoutes = require('./routes/appointment');
 app.use('/api', appointmentRoutes);
+
+// Auth service proxy routes
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
 
 // Basic API routes
 app.get('/api/test', (req, res) => {

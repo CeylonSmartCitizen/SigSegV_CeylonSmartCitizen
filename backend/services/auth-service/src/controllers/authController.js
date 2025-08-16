@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const jwtUtils = require('../utils/jwt');
 const NICValidator = require('../utils/nicValidator');
 const TokenBlacklist = require('../utils/tokenBlacklist');
-const AuthRateLimit = require('../utils/authRateLimit');
+// REMOVED: const AuthRateLimit = require('../utils/authRateLimit');
 const UserDB = require('../utils/userDB');
 const UserPreferences = require('../utils/userPreferences');
 const PasswordSecurity = require('../utils/passwordSecurity');
@@ -261,45 +261,13 @@ class AuthController {
       const { email, phone, password } = value;
       const identifier = email || phone;
 
-      // Check rate limiting before processing login
-      const rateLimitCheck = await AuthRateLimit.checkRateLimit(
-        req.ip,
-        identifier,
-        'login'
-      );
-
-      if (!rateLimitCheck.allowed) {
-        // Log rate limit hit
-        await AuthRateLimit.recordAttempt(
-          req.ip,
-          identifier,
-          false,
-          'rate_limit_exceeded',
-          req.get('User-Agent')
-        );
-
-        return res.status(429).json({
-          success: false,
-          message: language === 'si' ? 'ඉතා වැඩි උත්සාහයන් සිදු කර ඇත. කරුණාකර පසුව උත්සාහ කරන්න' :
-                   language === 'ta' ? 'மிக அதிகமான முயற்சிகள். தயவுசெய்து பின்னர் முயற்சிக்கவும்' :
-                   'Too many attempts. Please try again later',
-          code: 'RATE_LIMIT_EXCEEDED',
-          retryAfter: rateLimitCheck.retryAfter
-        });
-      }
+      // REMOVED: Rate limiting check entirely
 
       // Verify user credentials using UserDB
       const credentialResult = await UserDB.verifyUserCredentials(identifier, password);
 
       if (!credentialResult.success) {
-        // Log failed attempt
-        await AuthRateLimit.recordAttempt(
-          req.ip,
-          identifier,
-          false,
-          credentialResult.error,
-          req.get('User-Agent')
-        );
+        // REMOVED: Rate limiting - Log failed attempt
 
         const errorMessage = credentialResult.error === 'USER_DEACTIVATED' ?
           (language === 'si' ? 'ගිණුම අක්‍රිය කර ඇත' :
@@ -329,14 +297,7 @@ class AuthController {
         role: 'citizen'
       });
 
-      // Log successful login attempt
-      await AuthRateLimit.recordAttempt(
-        req.ip,
-        identifier,
-        true,
-        'login_success',
-        req.get('User-Agent')
-      );
+      // REMOVED: Rate limiting - Log successful login attempt
 
       // Prepare response
       const response = {

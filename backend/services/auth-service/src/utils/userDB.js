@@ -1,5 +1,6 @@
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const PasswordSecurity = require('./passwordSecurity');
 const { v4: uuidv4 } = require('uuid');
 
 /**
@@ -13,7 +14,7 @@ class UserDB {
    * @returns {Promise<Object>} Created user data (without password)
    */
   static async createUser(userData) {
-    const client = await db.connect();
+    const client = await db.getClient();
     
     try {
       await client.query('BEGIN');
@@ -24,16 +25,16 @@ class UserDB {
         firstName,
         lastName,
         nicNumber,
-        password,
+        password, // This should already be hashed when passed from controller
         preferredLanguage = 'en',
         profileImageUrl = null,
         dateOfBirth = null,
         address = null
       } = userData;
 
-      // Hash password
-      const saltRounds = 12;
-      const passwordHash = await bcrypt.hash(password, saltRounds);
+      // Password should already be hashed by PasswordSecurity.hashPassword() in controller
+      // No additional hashing needed here
+      const passwordHash = password;
 
       // Generate UUID
       const userId = uuidv4();
@@ -256,7 +257,7 @@ class UserDB {
    * @returns {Promise<Object>} Update result
    */
   static async updatePassword(userId, newPassword, oldPassword = null) {
-    const client = await db.connect();
+    const client = await db.getClient();
     
     try {
       await client.query('BEGIN');
@@ -342,7 +343,7 @@ class UserDB {
    * @returns {Promise<Object>} Activation result
    */
   static async activateUser(userId, activationType = 'admin') {
-    const client = await db.connect();
+    const client = await db.getClient();
     
     try {
       await client.query('BEGIN');
@@ -402,7 +403,7 @@ class UserDB {
    * @returns {Promise<Object>} Deactivation result
    */
   static async deactivateUser(userId, reason = 'admin_action', deactivatedBy = 'system') {
-    const client = await db.connect();
+    const client = await db.getClient();
     
     try {
       await client.query('BEGIN');
@@ -530,7 +531,7 @@ class UserDB {
    * @returns {Promise<Object>} Update result
    */
   static async updateUserProfile(userId, updateData) {
-    const client = await db.connect();
+    const client = await db.getClient();
     
     try {
       await client.query('BEGIN');
@@ -665,8 +666,8 @@ class UserDB {
         };
       }
 
-      // Verify password
-      const isValidPassword = await bcrypt.compare(password, user.password_hash);
+      // Verify password using PasswordSecurity utility (same as registration)
+      const isValidPassword = await PasswordSecurity.comparePassword(password, user.password_hash);
       
       if (!isValidPassword) {
         await this.logUserActivity(null, user.id, 'login_failed', {
