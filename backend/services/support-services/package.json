@@ -1,0 +1,29 @@
+{
+  "name": "support-services",
+  "version": "1.0.0",
+  "description": "Unified Support Services (Document, Notification, Queue, Audit)",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "node run-all-tests.js"
+  },
+  "keywords": ["support", "documents", "notifications", "queue", "audit"],
+  "author": "SigSegV CeylonSmartCitizen",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.11.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "form-data": "^4.0.4",
+    "helmet": "^7.0.0",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.16.3",
+    "redis": "^4.6.7",
+    "socket.io": "^4.8.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
