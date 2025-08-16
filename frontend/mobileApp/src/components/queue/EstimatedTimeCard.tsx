@@ -9,7 +9,7 @@ interface EstimatedTimeCardProps {
   lastUpdated?: Date;
 }
 
-const EstimatedTimeCard: React.FC<EstimatedTimeCardProps> = ({ waitTime, lastUpdated }) => {
+const EstimatedTimeCard = ({ waitTime, lastUpdated }: EstimatedTimeCardProps) => {
   const formatWaitTime = (minutes: number) => {
     if (minutes < 60) {
       return `${minutes} min`;

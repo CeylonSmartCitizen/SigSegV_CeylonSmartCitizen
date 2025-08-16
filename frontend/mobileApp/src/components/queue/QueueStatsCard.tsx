@@ -8,7 +8,7 @@ interface QueueStatsCardProps {
   stats: QueueStats;
 }
 
-const QueueStatsCard: React.FC<QueueStatsCardProps> = ({ stats }) => {
+const QueueStatsCard = ({ stats }: QueueStatsCardProps) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Queue Statistics</Text>

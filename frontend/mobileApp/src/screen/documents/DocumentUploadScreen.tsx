@@ -13,8 +13,8 @@ import DocumentCamera from '../../components/documents/DocumentCamera';
 import { DocumentData } from '../../types/queue.types';
 import { colors, spacing, typography } from '../../constants/theme';
 
-const DocumentUploadScreen: React.FC = () => {
-  const [documents, setDocuments] = useState<DocumentData[]>([]);
+const DocumentUploadScreen = () => {
+  const [documents, setDocuments] = useState([]);
 
   const handleDocumentCaptured = (document: DocumentData) => {
     setDocuments(prev => [document, ...prev]);

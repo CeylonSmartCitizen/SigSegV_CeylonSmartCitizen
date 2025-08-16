@@ -1,12 +1,12 @@
 // src/hooks/useQueue.ts
 import { useState, useEffect, useCallback } from 'react';
 import { QueueData } from '../types/queue.types';
-import { mockQueueService } from '../services/mockQueueService';
+import { mockQueueService } from '../services/MockQueueService';
 
 export const useQueue = () => {
-  const [queueData, setQueueData] = useState<QueueData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [queueData, setQueueData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchQueueData = useCallback(async () => {
     try {

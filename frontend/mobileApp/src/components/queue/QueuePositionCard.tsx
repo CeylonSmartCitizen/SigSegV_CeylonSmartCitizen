@@ -14,11 +14,11 @@ interface QueuePositionCardProps {
   status: 'waiting' | 'called' | 'serving' | 'completed' | 'cancelled';
 }
 
-const QueuePositionCard: React.FC<QueuePositionCardProps> = ({
+const QueuePositionCard = ({
   currentPosition,
   peopleAhead,
   status,
-}) => {
+}: QueuePositionCardProps) => {
   const scaleAnimation = useRef(new Animated.Value(1)).current;
   const pulseAnimation = useRef(new Animated.Value(1)).current;
 

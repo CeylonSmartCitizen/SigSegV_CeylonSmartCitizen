@@ -4,9 +4,9 @@ import { NotificationData } from '../types/queue.types';
 import { mockNotificationService } from '../services/mockNotificationService';
 
 export const useNotifications = () => {
-  const [notifications, setNotifications] = useState<NotificationData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchNotifications = useCallback(async () => {
     try {

@@ -7,7 +7,6 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Badge,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -15,10 +14,10 @@ import { NotificationData } from '../../types/queue.types';
 import { colors, spacing, typography } from '../../constants/theme';
 import { mockNotificationService } from '../../services/mockNotificationService';
 
-const NotificationCenter: React.FC = () => {
-  const [notifications, setNotifications] = useState<NotificationData[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
+const NotificationCenter = () => {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadNotifications = async () => {
     try {

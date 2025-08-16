@@ -5,8 +5,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import QueueDashboardScreen from '../screens/queue/QueueDashboardScreen';
-import DocumentUploadScreen from '../screens/documents/DocumentUploadScreen';
+import QueueDashboardScreen from '../components/queue/QueueDashboardScreen';
+import DocumentUploadScreen from '../screen/documents/DocumentUploadScreen';
 import NotificationCenter from '../components/notifications/NotificationCenter';
 import { colors } from '../constants/theme';
 

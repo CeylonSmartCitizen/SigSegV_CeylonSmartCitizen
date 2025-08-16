@@ -9,7 +9,7 @@ interface QueueProgressBarProps {
   served: number;
 }
 
-const QueueProgressBar: React.FC<QueueProgressBarProps> = ({ current, total, served }) => {
+const QueueProgressBar = ({ current, total, served }: QueueProgressBarProps) => {
   const progress = total > 0 ? (served / (served + total)) * 100 : 0;
 
   return (

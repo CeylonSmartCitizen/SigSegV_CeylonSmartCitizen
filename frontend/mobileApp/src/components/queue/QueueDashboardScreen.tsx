@@ -17,14 +17,14 @@ import QueueProgressBar from '../../components/queue/QueueProgressBar';
 import EstimatedTimeCard from '../../components/queue/EstimatedTimeCard';
 import QueueStatsCard from '../../components/queue/QueueStatsCard';
 import { QueueData } from '../../types/queue.types';
-import { mockQueueService } from '../../services/mockQueueService';
+import { mockQueueService } from '../../services/MockQueueService';
 import { colors, spacing, typography } from '../../constants/theme';
 
-const QueueDashboardScreen: React.FC = () => {
-  const [queueData, setQueueData] = useState<QueueData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+const QueueDashboardScreen = () => {
+  const [queueData, setQueueData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   const loadQueueData = async () => {
     try {

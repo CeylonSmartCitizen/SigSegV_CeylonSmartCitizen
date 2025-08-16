@@ -25,14 +25,14 @@ interface DocumentCameraProps {
   disabled?: boolean;
 }
 
-const DocumentCamera: React.FC<DocumentCameraProps> = ({
+const DocumentCamera = ({
   onDocumentCaptured,
   documentType = 'general',
   disabled = false,
-}) => {
-  const [capturedImage, setCapturedImage] = useState<any>(null);
-  const [processing, setProcessing] = useState<boolean>(false);
-  const [showOptions, setShowOptions] = useState<boolean>(false);
+}: DocumentCameraProps) => {
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
   const requestPermissions = async () => {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
