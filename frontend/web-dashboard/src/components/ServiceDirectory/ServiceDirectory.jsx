@@ -1,10 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ServiceDirectoryHeader from './ServiceDirectoryHeader';
 import FilterBar from './FilterBar';
 import SortDropdown from './SortDropdown';
 import ServiceList from './ServiceList';
 import ServiceDetails from './ServiceDetails';
 import BookingSuccessNotification from '../booking/BookingSuccessNotification';
+import ErrorBoundary, { withErrorBoundary } from '../common/ErrorBoundary';
+import { LoadingSpinner, ServiceListSkeleton } from '../common/LoadingStates';
+import { useNotifications } from '../common/NotificationSystem';
+import { useBooking } from '../../api/booking';
+import { ServiceDataManager } from '../../api/serviceDataManager';
+import { DataSyncManager } from '../../api/dataSyncManager';
+import { ErrorHandler } from '../../api/errorHandling';
 import { 
   mockServices, 
   recentlyViewedServices, 
@@ -31,6 +38,108 @@ const ServiceDirectory = () => {
     feeRange: { min: 0, max: 10000 },
     availability: []
   });
+
+  // API Integration State
+  const [services, setServices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [lastSync, setLastSync] = useState(null);
+
+  // Hooks
+  const { showSuccess, showError, showNetworkError } = useNotifications();
+  const { submitBooking } = useBooking();
+
+  // Initialize API managers
+  const serviceDataManager = useMemo(() => new ServiceDataManager(), []);
+  const dataSyncManager = useMemo(() => new DataSyncManager(), []);
+  const errorHandler = useMemo(() => new ErrorHandler(), []);
+
+  // Load services on component mount
+  useEffect(() => {
+    loadServices();
+    setupDataSync();
+    
+    // Subscribe to error notifications
+    const unsubscribe = errorHandler.subscribe((error) => {
+      if (error.category === 'network') {
+        showNetworkError(error, {
+          onRetry: () => loadServices()
+        });
+      } else {
+        showError(error.userMessage || error.message, {
+          title: 'Service Error',
+          onRetry: error.retryable ? () => loadServices() : undefined
+        });
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Load services from API with fallback to mock data
+  const loadServices = async (showLoadingState = true) => {
+    try {
+      if (showLoadingState) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
+      setError(null);
+
+      // Try to load from API first
+      let loadedServices = [];
+      try {
+        const apiServices = await serviceDataManager.getServiceDirectory();
+        loadedServices = apiServices;
+      } catch (apiError) {
+        console.warn('API service loading failed, using mock data:', apiError);
+        // Fallback to mock data for development
+        loadedServices = mockServices;
+      }
+
+      setServices(loadedServices);
+      setLastSync(new Date());
+      
+      if (!showLoadingState) {
+        showSuccess('Services updated successfully', {
+          duration: 3000
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load services:', error);
+      setError(error);
+      errorHandler.handleError(error, { context: 'loadServices' });
+      
+      // Fallback to mock data on error
+      setServices(mockServices);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
+  // Setup data synchronization
+  const setupDataSync = async () => {
+    try {
+      await dataSyncManager.initialize();
+      
+      // Listen for sync updates
+      dataSyncManager.subscribe('services', (updatedServices) => {
+        setServices(updatedServices);
+        setLastSync(new Date());
+        showSuccess('Services synchronized', { duration: 2000 });
+      });
+
+      // Start periodic sync
+      dataSyncManager.startPeriodicSync('services', 5 * 60 * 1000); // 5 minutes
+    } catch (error) {
+      console.warn('Data sync setup failed:', error);
+      // Continue without sync if it fails
+    }
+  };
 
   const handleViewModeChange = (newViewMode) => {
     setViewMode(newViewMode);
@@ -60,10 +169,66 @@ const ServiceDirectory = () => {
     setSelectedService(null);
   };
 
-  const handleBookingComplete = (bookingData) => {
-    console.log('Booking completed in directory:', bookingData);
-    setCompletedBooking(bookingData);
-    setSelectedService(null);
+  const handleBookingComplete = async (bookingData) => {
+    try {
+      console.log('Processing booking completion:', bookingData);
+      
+      // Submit booking through API
+      const bookingResult = await submitBooking({
+        serviceId: selectedService?.id,
+        serviceName: selectedService?.name,
+        ...bookingData
+      });
+
+      // Show success notification with actions
+      showSuccess(
+        `Your appointment has been successfully booked for ${bookingData.date} at ${bookingData.time}`,
+        {
+          title: 'Booking Confirmed',
+          actions: [
+            {
+              label: 'View Details',
+              onClick: () => console.log('View booking details:', bookingResult)
+            },
+            {
+              label: 'Add to Calendar',
+              onClick: () => {
+                // Create calendar event
+                const event = {
+                  title: `${selectedService?.name} Appointment`,
+                  start: new Date(`${bookingData.date}T${bookingData.time}`),
+                  description: `Appointment for ${selectedService?.name}\nReference: ${bookingResult.referenceNumber}`
+                };
+                console.log('Add to calendar:', event);
+              }
+            }
+          ],
+          duration: 8000
+        }
+      );
+
+      setCompletedBooking({
+        ...bookingData,
+        service: selectedService,
+        referenceNumber: bookingResult.referenceNumber
+      });
+      setSelectedService(null);
+
+      // Refresh service availability
+      if (selectedService?.id) {
+        try {
+          await serviceDataManager.refreshServiceAvailability(selectedService.id);
+        } catch (error) {
+          console.warn('Failed to refresh service availability:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Booking completion failed:', error);
+      errorHandler.handleError(error, { 
+        context: 'booking',
+        serviceId: selectedService?.id 
+      });
+    }
   };
 
   const handleCloseSuccessNotification = () => {
@@ -132,7 +297,7 @@ const ServiceDirectory = () => {
 
   // Filter and sort services based on all criteria
   const filteredAndSortedServices = useMemo(() => {
-    let filtered = mockServices;
+    let filtered = services; // Use API services instead of mockServices
 
     // Apply search filter
     if (searchTerm) {
@@ -183,22 +348,52 @@ const ServiceDirectory = () => {
 
     // Apply sorting
     return sortServices(filtered);
-  }, [searchTerm, selectedCategory, advancedFilters, sortConfig]);
+  }, [services, searchTerm, selectedCategory, advancedFilters, sortConfig]);
 
   // Calculate service counts for each category
   const serviceCounts = useMemo(() => {
-    const counts = { all: mockServices.length };
+    const counts = { all: services.length }; // Use API services instead of mockServices
     
     serviceCategories.forEach(category => {
       if (category.id !== 'all') {
-        counts[category.id] = mockServices.filter(service => 
+        counts[category.id] = services.filter(service => 
           service.category.toLowerCase() === category.id
         ).length;
       }
     });
 
     return counts;
-  }, []);
+  }, [services]); // Update dependency
+
+  // Handle refresh action
+  const handleRefresh = () => {
+    loadServices(false); // Don't show full loading state, just refresh
+  };
+
+  // Show loading skeleton while services are loading
+  if (isLoading) {
+    return (
+      <div className="service-directory">
+        <div className="service-directory-header">
+          <LoadingSpinner size="large" />
+          <p>Loading services...</p>
+        </div>
+        <ServiceListSkeleton count={12} />
+      </div>
+    );
+  }
+
+  // Show error state if services failed to load
+  if (error && services.length === 0) {
+    return (
+      <ErrorBoundary
+        componentName="ServiceDirectory"
+        fallbackMessage="Unable to load services. Please check your connection and try again."
+      >
+        <div>Service loading failed</div>
+      </ErrorBoundary>
+    );
+  }
 
   // Filter popular services based on current filters
   const filteredPopularServices = useMemo(() => {
@@ -274,11 +469,13 @@ const ServiceDirectory = () => {
   // Conditional rendering based on selected service
   if (selectedService) {
     return (
-      <ServiceDetails
-        service={selectedService}
-        onBack={handleBackToDirectory}
-        onBookAppointment={handleBookingComplete}
-      />
+      <ErrorBoundary componentName="ServiceDetails">
+        <ServiceDetails
+          service={selectedService}
+          onBack={handleBackToDirectory}
+          onBookAppointment={handleBookingComplete}
+        />
+      </ErrorBoundary>
     );
   }
 
@@ -287,7 +484,10 @@ const ServiceDirectory = () => {
       <ServiceDirectoryHeader 
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
-        totalServices={mockServices.length}
+        totalServices={services.length}
+        isRefreshing={isRefreshing}
+        onRefresh={handleRefresh}
+        lastSync={lastSync}
       />
 
       <FilterBar
@@ -407,4 +607,11 @@ const ServiceDirectory = () => {
   );
 };
 
-export default ServiceDirectory;
+export default withErrorBoundary(ServiceDirectory, {
+  componentName: 'ServiceDirectory',
+  fallbackMessage: 'The service directory encountered an error. Please refresh the page to continue.',
+  onError: (error, errorInfo) => {
+    console.error('ServiceDirectory Error:', error, errorInfo);
+    // In production, you would send this to an error tracking service
+  }
+});

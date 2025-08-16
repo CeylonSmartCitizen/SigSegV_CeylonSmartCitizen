@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Clock, 
@@ -8,21 +8,75 @@ import {
   Calendar,
   FileText,
   Users,
-  MessageCircle
+  MessageCircle,
+  RefreshCw
 } from 'lucide-react';
 import RequiredDocuments from './RequiredDocuments';
 import FeeBreakdown from './FeeBreakdown';
 import OfficerProfiles from './OfficerProfiles';
 import ServiceReviews from './ServiceReviews';
 import BookingWizard from '../booking/BookingWizard';
+import ErrorBoundary, { withErrorBoundary } from '../common/ErrorBoundary';
+import { LoadingSpinner, SkeletonCard } from '../common/LoadingStates';
+import { useNotifications } from '../common/NotificationSystem';
+import { ServiceDataManager } from '../../api/serviceDataManager';
 import '../../styles/ServiceDetails.css';
 
 const ServiceDetails = ({ service, onBack, onBookAppointment }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showBookingWizard, setShowBookingWizard] = useState(false);
+  const [serviceData, setServiceData] = useState(service);
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  const [availabilityData, setAvailabilityData] = useState(null);
+
+  // Hooks
+  const { showError, showSuccess } = useNotifications();
+  const serviceDataManager = new ServiceDataManager();
+
+  // Load real-time availability data
+  useEffect(() => {
+    if (service?.id) {
+      loadServiceAvailability();
+    }
+  }, [service?.id]);
+
+  const loadServiceAvailability = async () => {
+    try {
+      setIsLoadingAvailability(true);
+      const availability = await serviceDataManager.getServiceAvailability(service.id);
+      setAvailabilityData(availability);
+    } catch (error) {
+      console.warn('Failed to load service availability:', error);
+      // Continue with default availability from service data
+    } finally {
+      setIsLoadingAvailability(false);
+    }
+  };
+
+  const handleRefreshAvailability = async () => {
+    try {
+      await loadServiceAvailability();
+      showSuccess('Availability updated', { duration: 2000 });
+    } catch (error) {
+      showError('Failed to refresh availability', {
+        onRetry: () => handleRefreshAvailability()
+      });
+    }
+  };
 
   if (!service) {
-    return <div className="service-details-error">Service not found</div>;
+    return (
+      <ErrorBoundary componentName="ServiceDetails">
+        <div className="service-details-error">
+          <h3>Service not found</h3>
+          <p>The requested service could not be loaded.</p>
+          <button onClick={onBack} className="back-button">
+            <ArrowLeft size={20} />
+            Back to Directory
+          </button>
+        </div>
+      </ErrorBoundary>
+    );
   }
 
   const iconMap = {
@@ -120,13 +174,25 @@ const ServiceDetails = ({ service, onBack, onBookAppointment }) => {
           </div>
 
           <div className="service-header-actions">
+            <button
+              className="refresh-availability-button"
+              onClick={handleRefreshAvailability}
+              disabled={isLoadingAvailability}
+              title="Refresh availability"
+            >
+              <RefreshCw 
+                size={16} 
+                className={isLoadingAvailability ? 'spinning' : ''} 
+              />
+            </button>
+            
             <button 
               className="appointment-button"
               onClick={() => setShowBookingWizard(true)}
-              disabled={service.availability === 'unavailable'}
+              disabled={service.availability === 'unavailable' || isLoadingAvailability}
             >
               <Calendar size={20} />
-              Book Appointment
+              {isLoadingAvailability ? 'Checking Availability...' : 'Book Appointment'}
             </button>
           </div>
         </div>
@@ -225,16 +291,23 @@ const ServiceDetails = ({ service, onBack, onBookAppointment }) => {
           onComplete={(bookingData) => {
             console.log('Booking completed:', bookingData);
             setShowBookingWizard(false);
-            // Here you would typically send the booking data to your backend
-            alert(`Booking confirmed! Booking ID: ${bookingData.bookingId}`);
+            // Pass booking data to parent component for API submission
             if (onBookAppointment) {
               onBookAppointment(bookingData);
             }
           }}
+          availabilityData={availabilityData}
+          isLoadingAvailability={isLoadingAvailability}
         />
       )}
     </div>
   );
 };
 
-export default ServiceDetails;
+export default withErrorBoundary(ServiceDetails, {
+  componentName: 'ServiceDetails',
+  fallbackMessage: 'Unable to load service details. Please try again.',
+  onError: (error, errorInfo) => {
+    console.error('ServiceDetails Error:', error, errorInfo);
+  }
+});
