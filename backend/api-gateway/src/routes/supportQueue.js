@@ -10,7 +10,7 @@ function getEssentialHeaders(req) {
 	if (req.headers['authorization']) headers['authorization'] = req.headers['authorization'];
 	if (req.headers['content-type']) headers['content-type'] = req.headers['content-type'];
 	if (req.headers['accept']) headers['accept'] = req.headers['accept'];
-	if (req.headers['accept-language']) headers['accept-language'] = req.headers['accept-language'];
+	if (req.headers['accept-language']) headers['accept-language'] = req.hecladers['accept-language'];
 	return headers;
 }
 
