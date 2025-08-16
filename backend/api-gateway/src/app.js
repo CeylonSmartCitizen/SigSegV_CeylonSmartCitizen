@@ -22,29 +22,33 @@ app.get('/health', (req, res) => {
 
 
 
-// Appointment service proxy routes
-const appointmentRoutes = require('./routes/appointment');
-app.use('/api', appointmentRoutes);
 
-// Auth service proxy routes
+// Auth middleware
+const { authenticateToken } = require('./middleware/auth');
+
+// Appointment service proxy routes (protected)
+const appointmentRoutes = require('./routes/appointment');
+app.use('/api/appointments', authenticateToken, appointmentRoutes);
+
+// Auth service proxy routes (public)
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
-// Support service proxy routes
+// Support service proxy routes (all protected)
 const supportAuditRoutes = require('./routes/supportAudit');
-app.use('/api/support/audit', supportAuditRoutes);
+app.use('/api/support/audit', authenticateToken, supportAuditRoutes);
 
 const supportDocumentRoutes = require('./routes/supportDocument');
-app.use('/api/support/documents', supportDocumentRoutes);
+app.use('/api/support/documents', authenticateToken, supportDocumentRoutes);
 
 const supportNotificationRoutes = require('./routes/supportNotification');
-app.use('/api/support/notifications', supportNotificationRoutes);
+app.use('/api/support/notifications', authenticateToken, supportNotificationRoutes);
 
 const supportOfficerRoutes = require('./routes/supportOfficer');
-app.use('/api/support/officers', supportOfficerRoutes);
+app.use('/api/support/officers', authenticateToken, supportOfficerRoutes);
 
 const supportQueueRoutes = require('./routes/supportQueue');
-app.use('/api/support/queues', supportQueueRoutes);
+app.use('/api/support/queues', authenticateToken, supportQueueRoutes);
 
 // Basic API routes
 app.get('/api/test', (req, res) => {
