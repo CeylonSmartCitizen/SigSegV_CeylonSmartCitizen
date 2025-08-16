@@ -1,12 +1,5 @@
 // src/services/mockNotificationService.ts
-export interface NotificationData {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'warning' | 'success' | 'error';
-  timestamp: Date;
-  read: boolean;
-}
+import { NotificationData } from '../types/queue.types';
 
 class MockNotificationService {
   private notifications: NotificationData[] = [
@@ -14,16 +7,16 @@ class MockNotificationService {
       id: '1',
       title: 'Queue Update',
       message: 'Your position in queue has been updated',
-      type: 'info',
-      timestamp: new Date(),
+      type: 'queue_update',
+      createdAt: new Date(),
       read: false,
     },
     {
       id: '2',
       title: 'Document Required',
       message: 'Please upload your ID document',
-      type: 'warning',
-      timestamp: new Date(Date.now() - 3600000),
+      type: 'document_status',
+      createdAt: new Date(Date.now() - 3600000),
       read: true,
     },
   ];
@@ -45,10 +38,11 @@ class MockNotificationService {
     return Promise.resolve();
   }
 
-  async addNotification(notification: Omit<NotificationData, 'id'>): Promise<void> {
+  async addNotification(notification: Omit<NotificationData, 'id' | 'createdAt'>): Promise<void> {
     const newNotification: NotificationData = {
       ...notification,
       id: Date.now().toString(),
+      createdAt: new Date(),
     };
     this.notifications.unshift(newNotification);
     return Promise.resolve();

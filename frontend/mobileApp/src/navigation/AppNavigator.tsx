@@ -43,7 +43,7 @@ const NotificationStack = () => (
   </Stack.Navigator>
 );
 
-const AppNavigator: React.FC = () => {
+const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Tab.Navigator
