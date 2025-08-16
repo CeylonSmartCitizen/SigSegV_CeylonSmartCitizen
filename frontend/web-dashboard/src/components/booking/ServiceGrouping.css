@@ -1,0 +1,7 @@
+.service-grouping { padding: 1rem; }
+.service-group { margin-bottom: 1rem; }
+.service-group strong { font-size: 1.1rem; }
+.service-group ul { list-style: none; padding: 0; }
+.service-group li { margin-bottom: 0.5rem; }
+.dependency { color: #e57373; font-size: 0.9rem; margin-left: 0.5rem; }
+.selected-sequence { margin-top: 1rem; font-size: 0.95rem; font-weight: bold; }

@@ -1,0 +1,5 @@
+.time-slot-grid { padding: 1rem; }
+.slot-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 1rem; }
+.slot-btn { padding: 0.5rem; border-radius: 4px; border: 1px solid #eee; background: #f9f9f9; cursor: pointer; }
+.slot-btn.available { background: #e0f7fa; border-color: #00bcd4; }
+.business-hours { margin-top: 1rem; font-size: 0.95rem; color: #555; }
