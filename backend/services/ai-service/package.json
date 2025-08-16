@@ -1,0 +1,17 @@
+{
+  "name": "ai-service",
+  "version": "1.0.0",
+  "description": "OCR and AI processing service for Ceylon Smart Citizen",
+  "main": "src/ocr/app.js",
+  "scripts": {
+    "start": "node src/ocr/app.js",
+    "test": "node src/ocr/test-ocr.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "tesseract.js": "^6.0.1",
+    "pg": "^8.11.0"
+  },
+  "author": "Ceylon Smart Citizen Team",
+  "license": "ISC"
+}
