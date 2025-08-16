@@ -19,6 +19,11 @@ app.get('/health', (req, res) => {
   });
 });
 
+
+// Appointment service proxy routes
+const appointmentRoutes = require('./routes/appointment');
+app.use('/api', appointmentRoutes);
+
 // Basic API routes
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Ceylon Smart Citizen API is working!' });

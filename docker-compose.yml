@@ -55,11 +55,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
-      - REDIS_URL=redis://:ceylon123!@redis:6379
-      - JWT_SECRET=hackathon-super-secure-jwt-secret-key-2025
-      - PORT=3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
+      REDIS_URL: redis://:ceylon123!@redis:6379
+      JWT_SECRET: hackathon-super-secure-jwt-secret-key-2025
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:3001
+      APPOINTMENT_SERVICE_URL: http://appointment-service:3002
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,6 +96,32 @@ services:
     networks:
       - ceylon-network
 
+  # Support Services - unified service handling documents, notifications, queues, and audit
+  support-services:
+    build:
+      context: ./backend/services/support-services
+      dockerfile: Dockerfile
+    container_name: ceylon-support-services
+    restart: unless-stopped
+    ports:
+      - "3005:3005"  # Main service port
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
+      - REDIS_URL=redis://:ceylon123!@redis:6379
+      - PORT=3005
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/services/support-services:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+    networks:
+      - ceylon-network
+
   # pgAdmin - web interface to manage PostgreSQL database
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -125,3 +153,5 @@ volumes:
 networks:
   ceylon-network:
     driver: bridge
+
+
