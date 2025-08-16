@@ -62,6 +62,22 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
+// GET /notifications/:id - get a specific notification
+router.get('/:id', async (req, res) => {
+  try {
+    const notification = notifications.find(n => n.id == req.params.id);
+    
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+    
+    res.json(notification);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch notification' });
+  }
+});
+
 // PATCH /notifications/:id/read - mark a notification as read
 router.patch('/:id/read', async (req, res) => {
   try {
