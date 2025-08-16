@@ -88,7 +88,17 @@ app.get('/', (req, res) => {
       register: "/api/auth/register",
       login: "/api/auth/login",
       profile: "/api/auth/profile",
-      refreshToken: "/api/auth/refresh-token"
+      refreshToken: "/api/auth/refresh-token",
+      forgotPassword: "/api/auth/forgot-password",
+      resetPassword: "/api/auth/reset-password",
+      sessions: "/api/auth/sessions",
+      logoutSession: "/api/auth/logout-session/:sessionId",
+      logoutAllSessions: "/api/auth/logout-all-sessions",
+      deactivateAccount: "/api/auth/deactivate-account",
+      exportData: "/api/auth/export-data",
+      setupTwoFactor: "/api/auth/2fa/setup",
+      verifyTwoFactor: "/api/auth/2fa/verify",
+      disableTwoFactor: "/api/auth/2fa/disable"
     }
   });
 });

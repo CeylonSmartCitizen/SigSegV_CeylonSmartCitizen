@@ -47,8 +47,9 @@ const advancedLoginLimiter = AuthRateLimit.middleware();
 router.post('/register', registerLimiter, AuthController.register);
 router.post('/login', advancedLoginLimiter, authLimiter, AuthController.login);
 router.post('/refresh-token', AuthController.refreshToken);
-router.post('/forgot-password', AuthController.forgotPassword);
-router.post('/reset-password', AuthController.resetPassword);
+
+router.post('/forgot-password', authLimiter, AuthController.forgotPassword);
+router.post('/reset-password', authLimiter, AuthController.resetPassword);
 
 // Protected routes (authentication required)
 router.get('/profile', authenticateToken, AuthController.getProfile);
@@ -58,10 +59,27 @@ router.put('/change-password', authenticateToken, AuthController.changePassword)
 // User preferences routes
 router.get('/preferences', authenticateToken, AuthController.getUserPreferences);
 router.put('/preferences', authenticateToken, AuthController.updatePreferences);
+router.put('/language', authenticateToken, AuthController.saveUserLanguage);
 
 // Logout routes
 router.post('/logout', authenticateToken, AuthController.logout);
 router.post('/global-logout', authenticateToken, AuthController.globalLogout);
+
+// Session management routes
+router.get('/sessions', authenticateToken, AuthController.getActiveSessions);
+router.post('/logout-session/:sessionId', authenticateToken, AuthController.logoutSession);
+router.post('/logout-all-sessions', authenticateToken, AuthController.logoutAllSessions);
+
+// Account management routes
+router.delete('/deactivate-account', authenticateToken, AuthController.deactivateAccount);
+
+// Data export for GDPR compliance
+router.get('/export-data', authenticateToken, AuthController.exportUserData);
+
+// Two-Factor Authentication routes
+router.post('/2fa/setup', authenticateToken, AuthController.setupTwoFactor);
+router.post('/2fa/verify', authenticateToken, AuthController.verifyTwoFactor);
+router.post('/2fa/disable', authenticateToken, AuthController.disableTwoFactor);
 
 // Health check for auth service
 router.get('/health', (req, res) => {
@@ -76,7 +94,11 @@ router.get('/health', (req, res) => {
       'Rate Limiting',
       'Token Blacklisting',
       'Session Management',
-      'Multi-language Support'
+      'Multi-language Support',
+      'Two-Factor Authentication',
+      'Data Export (GDPR)',
+      'Account Deactivation',
+      'Active Session Management'
     ]
   });
 });
