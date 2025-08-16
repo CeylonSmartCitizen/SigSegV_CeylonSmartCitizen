@@ -43,7 +43,7 @@ class UserPreferences {
    * @returns {Promise<Object>} Operation result
    */
   static async setUserPreferences(userId, preferences) {
-    const client = await db.connect();
+    const client = await db.getClient();
     
     try {
       await client.query('BEGIN');
@@ -171,7 +171,7 @@ class UserPreferences {
    * @returns {Promise<Object>} Operation result
    */
   static async deleteUserPreferences(userId) {
-    const client = await db.connect();
+    const client = await db.getClient();
     
     try {
       await client.query('BEGIN');
