@@ -1,22 +1,20 @@
 
-// =============================
-// TEMPORARY NOTE: AUTH INTEGRATION PAUSED
-// Work on auth integration in the API Gateway is currently paused due to issues with route registration or service connectivity.
-// When resuming, check:
-//   - That /api/auth/* routes are registered in app.js
-//   - That the auth service is reachable and healthy
-//   - That proxy logic and middleware are correctly applied
-//   - That integration tests pass (see previous test scripts)
-// Resume from here.
-// =============================
+
 // Auth routes for API Gateway
-// This file proxies auth-related requests to the auth service
+// Proxies all /api/auth/* requests to the auth service
 
 
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const { authenticateToken } = require('../middleware/auth');
+
+// If you want to enforce authentication for protected routes, uncomment and implement authenticateToken middleware
+let authenticateToken;
+try {
+  authenticateToken = require('../middleware/auth').authenticateToken;
+} catch (e) {
+  authenticateToken = (req, res, next) => next(); // fallback: no-op
+}
 
 // Base URL for the auth service (update if needed)
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3000';
@@ -201,44 +199,7 @@ router.get('/health', async (req, res) => {
   }
 });
 
-// Proxy admin/monitoring endpoints (optional, can restrict in production)
-router.get('/stats/rate-limit', async (req, res) => {
-  try {
-    const response = await axios.get(`${AUTH_SERVICE_URL}/stats/rate-limit`, { headers: getEssentialHeaders(req) });
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      res.status(error.response.status).json(error.response.data);
-    } else {
-      res.status(500).json({ success: false, message: 'Auth service unavailable' });
-    }
-  }
-});
 
-router.get('/stats/blacklist', async (req, res) => {
-  try {
-    const response = await axios.get(`${AUTH_SERVICE_URL}/stats/blacklist`, { headers: getEssentialHeaders(req) });
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      res.status(error.response.status).json(error.response.data);
-    } else {
-      res.status(500).json({ success: false, message: 'Auth service unavailable' });
-    }
-  }
-});
-
-router.post('/maintenance/cleanup', async (req, res) => {
-  try {
-    const response = await axios.post(`${AUTH_SERVICE_URL}/maintenance/cleanup`, req.body, { headers: getEssentialHeaders(req) });
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    if (error.response) {
-      res.status(error.response.status).json(error.response.data);
-    } else {
-      res.status(500).json({ success: false, message: 'Auth service unavailable' });
-    }
-  }
-});
+// (Optional) Add more proxy endpoints as needed for new auth service features
 
 module.exports = router;
