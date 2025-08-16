@@ -6,10 +6,12 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Enhanced rate limiting for authentication endpoints
+// Enhanced rate limiting for authentication endpoints (loosened for development)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 8, // Increased to 8 attempts for better UX
+
+  windowMs: 5 * 60 * 1000, // 5 minutes (reduced from 15)
+  max: 100, // Increased to 100 attempts for development testing
+
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later',
@@ -25,8 +27,10 @@ const authLimiter = rateLimit({
 });
 
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // Limit each IP to 3 registration attempts per hour
+
+  windowMs: 15 * 60 * 1000, // 15 minutes (reduced from 1 hour)
+  max: 20, // Increased to 20 registration attempts for development
+
   message: {
     success: false,
     message: 'Too many registration attempts, please try again later',
@@ -43,6 +47,7 @@ const advancedLoginLimiter = AuthRateLimit.middleware();
 router.post('/register', registerLimiter, AuthController.register);
 router.post('/login', advancedLoginLimiter, authLimiter, AuthController.login);
 router.post('/refresh-token', AuthController.refreshToken);
+
 router.post('/forgot-password', authLimiter, AuthController.forgotPassword);
 router.post('/reset-password', authLimiter, AuthController.resetPassword);
 

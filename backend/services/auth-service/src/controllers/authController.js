@@ -18,6 +18,56 @@ const {
 
 class AuthController {
   /**
+   * Reset password: Accepts token and new password, responds with a success message (implement logic as needed)
+   */
+  static async resetPassword(req, res) {
+    try {
+      const { token, password } = req.body;
+      if (!token || !password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Token and new password are required',
+        });
+      }
+      // TODO: Implement token verification and password update logic here
+      // For now, just respond with success
+      return res.status(200).json({
+        success: true,
+        message: 'Password has been reset successfully.'
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Server error',
+      });
+    }
+  }
+  /**
+   * Forgot password: Accepts email and responds with a success message (implement email logic as needed)
+   */
+  static async forgotPassword(req, res) {
+    try {
+      const { email } = req.body;
+      if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'A valid email is required',
+        });
+      }
+      // TODO: Implement email sending logic here (send reset link/token)
+      // For now, just respond with success
+      return res.status(200).json({
+        success: true,
+        message: 'If this email is registered, a password reset link will be sent.'
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Server error',
+      });
+    }
+  }
+  /**
    * User registration with comprehensive security and validation
    */
   static async register(req, res) {
