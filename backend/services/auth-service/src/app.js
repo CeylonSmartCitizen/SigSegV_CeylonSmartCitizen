@@ -76,7 +76,6 @@ app.get("/health", async (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
-
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
@@ -89,13 +88,23 @@ app.get('/', (req, res) => {
       register: "/api/auth/register",
       login: "/api/auth/login",
       profile: "/api/auth/profile",
-      refreshToken: "/api/auth/refresh-token"
+      refreshToken: "/api/auth/refresh-token",
+      forgotPassword: "/api/auth/forgot-password",
+      resetPassword: "/api/auth/reset-password",
+      sessions: "/api/auth/sessions",
+      logoutSession: "/api/auth/logout-session/:sessionId",
+      logoutAllSessions: "/api/auth/logout-all-sessions",
+      deactivateAccount: "/api/auth/deactivate-account",
+      exportData: "/api/auth/export-data",
+      setupTwoFactor: "/api/auth/2fa/setup",
+      verifyTwoFactor: "/api/auth/2fa/verify",
+      disableTwoFactor: "/api/auth/2fa/disable"
     }
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
+// 404 handler - FIXED: removed backslash
+app.use( (req, res) => {
   res.status(404).json({
     success: false,
     message: "Endpoint not found",

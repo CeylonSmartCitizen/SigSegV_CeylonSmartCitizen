@@ -1,5 +1,8 @@
 ﻿FROM node:18-alpine
 
+# Install curl for health checks
+RUN apk add --no-cache curl
+
 WORKDIR /app
 
 # Copy package files
@@ -12,4 +15,5 @@ RUN npm install
 COPY . .
 
 EXPOSE 3001
-CMD ["node", "src/app.js"]
+
+CMD ["npx", "nodemon", "src/app.js"]
