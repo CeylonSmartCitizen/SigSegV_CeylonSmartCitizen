@@ -1,0 +1,678 @@
+/* Wait List Manager Styles */
+.waitlist-manager {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.waitlist-manager.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+/* Header */
+.waitlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.waitlist-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.notification-indicator {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.bell-icon {
+  width: 24px;
+  height: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.bell-icon:hover {
+  color: #3b82f6;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* Tabs */
+.waitlist-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-btn:hover {
+  color: #3b82f6;
+}
+
+.tab-btn.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+.tab-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Section Styles */
+.waitlist-section {
+  margin-bottom: 32px;
+}
+
+.waitlist-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 16px;
+}
+
+.section-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.section-icon.available {
+  color: #10b981;
+}
+
+.section-icon.active {
+  color: #3b82f6;
+}
+
+.section-icon.history {
+  color: #6b7280;
+}
+
+.section-icon.preferences {
+  color: #8b5cf6;
+}
+
+.section-icon.notifications {
+  color: #f59e0b;
+}
+
+/* Wait List Entries */
+.entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.waitlist-entry {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.waitlist-entry:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.waitlist-entry.available {
+  border-left: 4px solid #10b981;
+  background: #f0fdf4;
+}
+
+.waitlist-entry.active {
+  border-left: 4px solid #3b82f6;
+}
+
+.waitlist-entry.history.booked {
+  border-left: 4px solid #10b981;
+  opacity: 0.8;
+}
+
+.waitlist-entry.history.expired {
+  border-left: 4px solid #ef4444;
+  opacity: 0.6;
+}
+
+.entry-content {
+  padding: 16px;
+}
+
+.entry-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.service-info h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.service-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priority-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.priority-icon.high {
+  color: #ef4444;
+}
+
+.priority-icon.low {
+  color: #6b7280;
+}
+
+.time-info {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 4px 0;
+}
+
+.join-info {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Wait Information */
+.wait-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.position-info,
+.estimate-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.position-icon,
+.estimate-icon {
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+}
+
+.position {
+  font-size: 18px;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.position-label {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.estimate {
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+/* Availability Information */
+.availability-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.urgent-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.urgent-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Entry Actions */
+.entry-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn.primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.action-btn.secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.action-btn.secondary:hover {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.action-icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Entry Footer */
+.entry-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+  font-size: 12px;
+}
+
+.auto-book {
+  font-weight: 500;
+}
+
+.auto-book.enabled {
+  color: #059669;
+}
+
+.auto-book.disabled {
+  color: #6b7280;
+}
+
+.notifications-sent {
+  color: #9ca3af;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.active {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-badge.available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.booked {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.expired {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.completion-time {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 4px 0 0 0;
+}
+
+/* Empty States */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 2px dashed #d1d5db;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  color: #9ca3af;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  max-width: 300px;
+}
+
+/* Preferences Section */
+.preferences-section {
+  margin-bottom: 32px;
+}
+
+.preference-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.preference-group h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px 0;
+}
+
+.preference-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preference-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.preference-option:hover {
+  background: #f9fafb;
+}
+
+.preference-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3b82f6;
+}
+
+.preference-icon {
+  width: 16px;
+  height: 16px;
+  color: #6b7280;
+}
+
+.preference-setting {
+  margin-top: 12px;
+}
+
+.preference-setting label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.preference-setting select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+  max-width: 200px;
+}
+
+/* Notifications List */
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.notification-item:hover {
+  background: #f9fafb;
+}
+
+.notification-item.unread {
+  border-left: 3px solid #3b82f6;
+  background: #eff6ff;
+}
+
+.notification-item.urgent {
+  border-left: 3px solid #ef4444;
+}
+
+.notification-content h5 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.notification-content p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.notification-time {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.unread-indicator {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .waitlist-manager {
+    padding: 16px;
+  }
+  
+  .waitlist-header {
+    margin-bottom: 16px;
+  }
+  
+  .waitlist-header h2 {
+    font-size: 18px;
+  }
+  
+  .entry-main {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .wait-info {
+    align-items: flex-start;
+    flex-direction: row;
+    gap: 16px;
+  }
+  
+  .entry-actions {
+    justify-content: flex-start;
+  }
+  
+  .preference-groups {
+    gap: 16px;
+  }
+  
+  .notifications-list {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .waitlist-tabs {
+    flex-direction: column;
+  }
+  
+  .tab-btn {
+    width: 100%;
+    justify-content: center;
+    border-bottom: 1px solid #e5e7eb;
+    border-right: none;
+  }
+  
+  .tab-btn.active {
+    border-bottom-color: #3b82f6;
+  }
+  
+  .entry-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .entry-actions {
+    flex-direction: column;
+  }
+}
+
+/* Animation for real-time updates */
+@keyframes pulseUpdate {
+  0% { background: #eff6ff; }
+  50% { background: #dbeafe; }
+  100% { background: #eff6ff; }
+}
+
+.waitlist-entry.updating {
+  animation: pulseUpdate 2s ease-in-out;
+}
+
+/* Focus states for accessibility */
+.action-btn:focus,
+.tab-btn:focus,
+.notification-item:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.preference-option:focus-within {
+  background: #f9fafb;
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 6px;
+}

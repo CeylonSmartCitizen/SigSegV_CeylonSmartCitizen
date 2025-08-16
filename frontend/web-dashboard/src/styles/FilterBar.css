@@ -1,0 +1,73 @@
+/* FilterBar.css */
+.filter-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  margin-bottom: 32px;
+  align-items: start;
+}
+
+.filter-section.search-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-section.category-section {
+  min-width: 280px;
+}
+
+.filter-section.advanced-section {
+  grid-column: 1 / -1;
+  margin-top: 8px;
+}
+
+/* Compact layout */
+.filter-bar.compact {
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.filter-bar.compact .filter-section.category-section {
+  min-width: auto;
+}
+
+.filter-bar.compact .category-filter {
+  padding: 16px;
+}
+
+.filter-bar.compact .category-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-bar.compact .category-item {
+  flex-direction: row;
+  min-width: auto;
+  padding: 8px 12px;
+}
+
+/* Mobile responsive */
+@media (max-width: 1024px) {
+  .filter-bar {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .filter-section.category-section {
+    min-width: auto;
+  }
+  
+  .filter-section.advanced-section {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-bar {
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+}

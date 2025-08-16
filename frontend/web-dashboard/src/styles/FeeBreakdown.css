@@ -1,0 +1,355 @@
+/* FeeBreakdown.css */
+.fee-breakdown {
+  max-width: 100%;
+}
+
+/* Simple Fee Display */
+.fee-breakdown-simple {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 20px;
+}
+
+.simple-fee-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+}
+
+.fee-icon {
+  opacity: 0.9;
+}
+
+.fee-info h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.total-amount {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.fee-note {
+  font-size: 14px;
+  color: #6b7280;
+  text-align: center;
+  margin: 0;
+}
+
+/* Header */
+.fee-breakdown-header {
+  margin-bottom: 24px;
+}
+
+.fee-breakdown-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.fee-breakdown-header p {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Breakdown Card */
+.breakdown-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.breakdown-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.breakdown-icon {
+  color: #3b82f6;
+}
+
+.breakdown-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+}
+
+.breakdown-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.breakdown-item:last-child {
+  border-bottom: none;
+}
+
+.breakdown-label {
+  font-size: 1rem;
+  color: #374151;
+}
+
+.breakdown-amount {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.breakdown-total {
+  border-top: 2px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.total-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+/* Payment Methods */
+.payment-methods {
+  margin-bottom: 24px;
+}
+
+.payment-methods h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+}
+
+.payment-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.payment-method {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.payment-method.available {
+  cursor: pointer;
+}
+
+.payment-method.available:hover {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.payment-method.unavailable {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.payment-icon {
+  color: #6b7280;
+}
+
+.payment-method.available .payment-icon {
+  color: #3b82f6;
+}
+
+.payment-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.payment-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.payment-status {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payment-status.available {
+  color: #10b981;
+}
+
+.payment-status.unavailable {
+  color: #ef4444;
+}
+
+.payment-fee {
+  font-size: 14px;
+  font-weight: 500;
+  color: #f59e0b;
+}
+
+/* Fee Info Card */
+.fee-info-card {
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.info-icon {
+  color: #0ea5e9;
+}
+
+.info-header h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0c4a6e;
+  margin: 0;
+}
+
+.info-content ul {
+  margin: 0;
+  padding-left: 16px;
+}
+
+.info-content li {
+  font-size: 14px;
+  color: #0c4a6e;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.info-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* Refund Policy */
+.refund-policy {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.refund-policy h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
+}
+
+.policy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.policy-item {
+  text-align: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.policy-timeframe {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.policy-percentage {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .payment-methods-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .policy-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .breakdown-card {
+    padding: 20px;
+  }
+
+  .simple-fee-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .fee-breakdown {
+    padding: 0;
+  }
+
+  .breakdown-card {
+    padding: 16px;
+  }
+
+  .payment-method {
+    padding: 12px;
+  }
+
+  .refund-policy,
+  .fee-info-card {
+    padding: 16px;
+  }
+}

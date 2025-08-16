@@ -1,0 +1,8 @@
+.calendar-view { padding: 1rem; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-top: 1rem; }
+.calendar-day { padding: 0.5rem; border-radius: 4px; border: 1px solid #eee; background: #f9f9f9; cursor: pointer; }
+.calendar-day.available { background: #e0ffe0; border-color: #8bc34a; }
+.calendar-day.selected { background: #8bc34a; color: #fff; }
+.calendar-day.fully-booked { background: #ffe0e0; border-color: #e57373; color: #b71c1c; }
+.wait-list { margin-top: 1rem; color: #b71c1c; font-weight: bold; }
+.selected-dates { margin-top: 1rem; font-size: 0.95rem; }

@@ -1,0 +1,6 @@
+@echo off
+echo Installing dependencies for appointment service...
+cd "C:\Users\lehan\Desktop\Rootcode\SigSegV_CeylonSmartCitizen\backend\services\appointment-service"
+npm install
+echo Starting appointment service...
+npm start

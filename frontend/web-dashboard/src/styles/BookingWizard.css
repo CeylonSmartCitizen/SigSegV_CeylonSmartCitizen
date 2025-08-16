@@ -1,0 +1,303 @@
+/* Booking Wizard Styles */
+.booking-wizard-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.booking-wizard {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
+}
+
+/* Header */
+.booking-header {
+  position: relative;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.booking-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.service-name {
+  color: #6b7280;
+  margin: 0;
+  font-size: 16px;
+}
+
+.close-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Progress Steps */
+.progress-steps {
+  display: flex;
+  padding: 32px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  overflow-x: auto;
+  gap: 16px;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex-shrink: 0;
+  min-width: 120px;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.step.active {
+  opacity: 1;
+}
+
+.step.completed {
+  opacity: 1;
+}
+
+.step-indicator {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+}
+
+.step.active .step-indicator {
+  background: #3b82f6;
+  color: white;
+  transform: scale(1.1);
+}
+
+.step.completed .step-indicator {
+  background: #10b981;
+  color: white;
+}
+
+.step-number {
+  position: absolute;
+  font-size: 12px;
+  font-weight: 600;
+  bottom: -2px;
+  right: -2px;
+  background: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #e5e7eb;
+}
+
+.step.active .step-number {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.step.completed .step-number {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.step-info {
+  text-align: center;
+}
+
+.step-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.step-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.step-connector {
+  position: absolute;
+  top: 24px;
+  left: 60px;
+  right: -60px;
+  height: 2px;
+  background: #e5e7eb;
+  z-index: -1;
+  transition: background 0.3s ease;
+}
+
+.step-connector.completed {
+  background: #10b981;
+}
+
+/* Step Content */
+.step-content {
+  padding: 32px;
+  min-height: 400px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* Navigation */
+.wizard-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.nav-btn.primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.nav-btn.primary:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.nav-btn.secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.nav-btn.secondary:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.step-indicator-text {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .booking-wizard-overlay {
+    padding: 10px;
+  }
+  
+  .booking-wizard {
+    max-height: 95vh;
+  }
+  
+  .booking-header {
+    padding: 20px 24px;
+  }
+  
+  .progress-steps {
+    padding: 24px 20px;
+    gap: 12px;
+  }
+  
+  .step {
+    min-width: 100px;
+  }
+  
+  .step-indicator {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .step-info h4 {
+    font-size: 13px;
+  }
+  
+  .step-info p {
+    font-size: 11px;
+  }
+  
+  .step-content {
+    padding: 24px 20px;
+    min-height: 350px;
+  }
+  
+  .wizard-navigation {
+    padding: 20px 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .nav-btn {
+    padding: 10px 20px;
+  }
+  
+  .step-indicator-text {
+    order: -1;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+}
