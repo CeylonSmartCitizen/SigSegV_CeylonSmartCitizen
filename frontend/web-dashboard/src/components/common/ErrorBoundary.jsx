@@ -49,7 +49,7 @@ class ErrorBoundary extends React.Component {
     };
 
     // For development, log to console
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.group('🚨 Error Boundary Report');
       console.log('Error ID:', errorReport.errorId);
       console.log('Component:', errorReport.component);
@@ -124,7 +124,7 @@ Please describe what you were doing when this error occurred:
                   'We encountered an unexpected error. Our team has been notified and is working on a fix.'}
               </p>
 
-              {process.env.NODE_ENV === 'development' && (
+              {import.meta.env.MODE === 'development' && (
                 <details className="error-boundary-details">
                   <summary>Error Details (Development)</summary>
                   <pre className="error-boundary-stack">

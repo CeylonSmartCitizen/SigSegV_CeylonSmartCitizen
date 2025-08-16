@@ -1,3 +1,21 @@
+/*
+ * ServiceDirectory Component - Mock Data Mode
+ * 
+ * This component is currently configured to work with mock data only.
+ * All backend API integrations are disabled during backend development.
+ * 
+ * When backend is ready, uncomment the following imports and API managers:
+ * - ServiceDataManager
+ * - DataSyncManager 
+ * - ErrorHandler
+ * 
+ * Also re-enable the corresponding functions:
+ * - loadServices() API calls
+ * - setupDataSync() initialization
+ * - Error handler subscriptions
+ * - Service availability refresh
+ */
+
 import React, { useState, useMemo, useEffect } from 'react';
 import ServiceDirectoryHeader from './ServiceDirectoryHeader';
 import FilterBar from './FilterBar';
@@ -8,10 +26,11 @@ import BookingSuccessNotification from '../booking/BookingSuccessNotification';
 import ErrorBoundary, { withErrorBoundary } from '../common/ErrorBoundary';
 import { LoadingSpinner, ServiceListSkeleton } from '../common/LoadingStates';
 import { useNotifications } from '../common/NotificationSystem';
-import { useBooking } from '../../api/booking';
-import { ServiceDataManager } from '../../api/serviceDataManager';
-import { DataSyncManager } from '../../api/dataSyncManager';
-import { ErrorHandler } from '../../api/errorHandling';
+import { useBooking } from '../../api/booking.jsx';
+// Backend services disabled during development
+// import { ServiceDataManager } from '../../api/serviceDataManager';
+// import { DataSyncManager } from '../../api/dataSyncManager';
+// import { ErrorHandler } from '../../api/errorHandling';
 import { 
   mockServices, 
   recentlyViewedServices, 
@@ -50,36 +69,191 @@ const ServiceDirectory = () => {
   const { showSuccess, showError, showNetworkError } = useNotifications();
   const { submitBooking } = useBooking();
 
-  // Initialize API managers
-  const serviceDataManager = useMemo(() => new ServiceDataManager(), []);
-  const dataSyncManager = useMemo(() => new DataSyncManager(), []);
-  const errorHandler = useMemo(() => new ErrorHandler(), []);
+  // API managers disabled during backend development
+  // const serviceDataManager = useMemo(() => new ServiceDataManager(), []);
+  // const dataSyncManager = useMemo(() => new DataSyncManager(), []);
+  // const errorHandler = useMemo(() => new ErrorHandler(), []);
 
-  // Load services on component mount
-  useEffect(() => {
-    loadServices();
-    setupDataSync();
+  // Calculate filtered and sorted services
+  const filteredAndSortedServices = useMemo(() => {
+    let filtered = services.filter(service => {
+      // Text search
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matches = service.name.toLowerCase().includes(searchLower) ||
+                       service.description.toLowerCase().includes(searchLower) ||
+                       service.department.toLowerCase().includes(searchLower) ||
+                       service.category.toLowerCase().includes(searchLower);
+        if (!matches) return false;
+      }
+
+      // Category filter
+      if (selectedCategory !== 'all') {
+        if (service.category.toLowerCase() !== selectedCategory) return false;
+      }
+
+      // Advanced filters
+      if (advancedFilters.departments.length > 0) {
+        if (!advancedFilters.departments.includes(service.department)) return false;
+      }
+
+      if (advancedFilters.locations.length > 0) {
+        if (!advancedFilters.locations.includes(service.location)) return false;
+      }
+
+      if (advancedFilters.availability.length > 0) {
+        if (!advancedFilters.availability.includes(service.availability)) return false;
+      }
+
+      const { min, max } = advancedFilters.feeRange;
+      if (min > 0 || max < 10000) {
+        if (service.fee < min || service.fee > max) return false;
+      }
+
+      return true;
+    });
+
+    // Apply sorting
+    const sortServices = (services) => {
+      return [...services].sort((a, b) => {
+        switch (sortConfig.key) {
+          case 'name':
+            return sortConfig.direction === 'asc' ? 
+              a.name.localeCompare(b.name) : 
+              b.name.localeCompare(a.name);
+          case 'fee':
+            return sortConfig.direction === 'asc' ? 
+              a.fee - b.fee : 
+              b.fee - a.fee;
+          case 'popularity':
+            return sortConfig.direction === 'asc' ? 
+              a.rating - b.rating : 
+              b.rating - a.rating;
+          default:
+            return 0;
+        }
+      });
+    };
+
+    return sortServices(filtered);
+  }, [services, searchTerm, selectedCategory, advancedFilters, sortConfig]);
+
+  // Calculate service counts for each category
+  const serviceCounts = useMemo(() => {
+    const counts = { all: services.length }; // Use API services instead of mockServices
     
-    // Subscribe to error notifications
-    const unsubscribe = errorHandler.subscribe((error) => {
-      if (error.category === 'network') {
-        showNetworkError(error, {
-          onRetry: () => loadServices()
-        });
-      } else {
-        showError(error.userMessage || error.message, {
-          title: 'Service Error',
-          onRetry: error.retryable ? () => loadServices() : undefined
-        });
+    serviceCategories.forEach(category => {
+      if (category.id !== 'all') {
+        counts[category.id] = services.filter(service => 
+          service.category.toLowerCase() === category.id
+        ).length;
       }
     });
 
-    return () => {
-      unsubscribe();
-    };
-  }, []);
+    return counts;
+  }, [services]); // Update dependency
 
-  // Load services from API with fallback to mock data
+  // Filter popular services based on current filters
+  const filteredPopularServices = useMemo(() => {
+    const sortServices = (services) => {
+      return [...services].sort((a, b) => {
+        switch (sortConfig.key) {
+          case 'name':
+            return sortConfig.direction === 'asc' ? 
+              a.name.localeCompare(b.name) : 
+              b.name.localeCompare(a.name);
+          case 'fee':
+            return sortConfig.direction === 'asc' ? 
+              a.fee - b.fee : 
+              b.fee - a.fee;
+          case 'popularity':
+            return sortConfig.direction === 'asc' ? 
+              a.rating - b.rating : 
+              b.rating - a.rating;
+          default:
+            return 0;
+        }
+      });
+    };
+    return sortServices(filteredAndSortedServices.filter(service => service.popular));
+  }, [filteredAndSortedServices, sortConfig]);
+
+  // Filter recently viewed services based on current filters  
+  const filteredRecentlyViewed = useMemo(() => {
+    const filtered = recentlyViewedServices.filter(service => {
+      // Apply same filters as main services
+      let matches = true;
+      
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        matches = matches && (
+          service.name.toLowerCase().includes(searchLower) ||
+          service.description.toLowerCase().includes(searchLower) ||
+          service.department.toLowerCase().includes(searchLower) ||
+          service.category.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      if (selectedCategory !== 'all') {
+        matches = matches && (service.category.toLowerCase() === selectedCategory);
+      }
+
+      // Apply advanced filters
+      if (advancedFilters.departments.length > 0) {
+        matches = matches && advancedFilters.departments.includes(service.department);
+      }
+
+      if (advancedFilters.locations.length > 0) {
+        matches = matches && advancedFilters.locations.includes(service.location);
+      }
+
+      if (advancedFilters.availability.length > 0) {
+        matches = matches && advancedFilters.availability.includes(service.availability);
+      }
+
+      const { min, max } = advancedFilters.feeRange;
+      if (min > 0 || max < 10000) {
+        matches = matches && (service.fee >= min && service.fee <= max);
+      }
+      
+      return matches;
+    });
+
+    const sortServices = (services) => {
+      return [...services].sort((a, b) => {
+        switch (sortConfig.key) {
+          case 'name':
+            return sortConfig.direction === 'asc' ? 
+              a.name.localeCompare(b.name) : 
+              b.name.localeCompare(a.name);
+          case 'fee':
+            return sortConfig.direction === 'asc' ? 
+              a.fee - b.fee : 
+              b.fee - a.fee;
+          case 'popularity':
+            return sortConfig.direction === 'asc' ? 
+              a.rating - b.rating : 
+              b.rating - a.rating;
+          default:
+            return 0;
+        }
+      });
+    };
+
+    return sortServices(filtered);
+  }, [searchTerm, selectedCategory, advancedFilters, sortConfig]);
+
+  const hasActiveFilters = useMemo(() => {
+    return searchTerm || 
+           selectedCategory !== 'all' ||
+           advancedFilters.departments.length > 0 ||
+           advancedFilters.locations.length > 0 ||
+           advancedFilters.availability.length > 0 ||
+           advancedFilters.feeRange.min > 0 ||
+           advancedFilters.feeRange.max < 10000;
+  }, [searchTerm, selectedCategory, advancedFilters]);
+
+  // Load services from mock data (backend in development)
   const loadServices = async (showLoadingState = true) => {
     try {
       if (showLoadingState) {
@@ -89,18 +263,12 @@ const ServiceDirectory = () => {
       }
       setError(null);
 
-      // Try to load from API first
-      let loadedServices = [];
-      try {
-        const apiServices = await serviceDataManager.getServiceDirectory();
-        loadedServices = apiServices;
-      } catch (apiError) {
-        console.warn('API service loading failed, using mock data:', apiError);
-        // Fallback to mock data for development
-        loadedServices = mockServices;
-      }
+      // Simulate API loading delay for realistic UX
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      setServices(loadedServices);
+      // Use mock data since backend is in development
+      console.log('Loading mock services data (backend in development)');
+      setServices(mockServices);
       setLastSync(new Date());
       
       if (!showLoadingState) {
@@ -111,9 +279,8 @@ const ServiceDirectory = () => {
     } catch (error) {
       console.error('Failed to load services:', error);
       setError(error);
-      errorHandler.handleError(error, { context: 'loadServices' });
       
-      // Fallback to mock data on error
+      // Always fallback to mock data
       setServices(mockServices);
     } finally {
       setIsLoading(false);
@@ -121,25 +288,81 @@ const ServiceDirectory = () => {
     }
   };
 
-  // Setup data synchronization
+  // Setup data synchronization (disabled during backend development)
   const setupDataSync = async () => {
     try {
-      await dataSyncManager.initialize();
+      console.log('Data sync disabled - backend in development');
+      // Skip data sync setup since backend is not ready
+      // This would be enabled once backend APIs are available
       
-      // Listen for sync updates
-      dataSyncManager.subscribe('services', (updatedServices) => {
-        setServices(updatedServices);
-        setLastSync(new Date());
-        showSuccess('Services synchronized', { duration: 2000 });
-      });
-
-      // Start periodic sync
-      dataSyncManager.startPeriodicSync('services', 5 * 60 * 1000); // 5 minutes
+      // Future implementation:
+      // await dataSyncManager.initialize();
+      // dataSyncManager.subscribe('services', (updatedServices) => {
+      //   setServices(updatedServices);
+      //   setLastSync(new Date());
+      //   showSuccess('Services synchronized', { duration: 2000 });
+      // });
+      // dataSyncManager.startPeriodicSync('services', 5 * 60 * 1000);
+      
     } catch (error) {
-      console.warn('Data sync setup failed:', error);
-      // Continue without sync if it fails
+      console.warn('Data sync setup skipped:', error);
+      // Continue without sync
     }
   };
+
+  // Load services on component mount
+  useEffect(() => {
+    loadServices();
+    setupDataSync();
+    
+    // Error handler disabled during backend development
+    // const unsubscribe = errorHandler.subscribe((error) => {
+    //   if (error.category === 'network') {
+    //     showNetworkError(error, {
+    //       onRetry: () => loadServices()
+    //     });
+    //   } else {
+    //     showError(error.userMessage || error.message, {
+    //       title: 'Service Error',
+    //       onRetry: error.retryable ? () => loadServices() : undefined
+    //     });
+    //   }
+    // });
+
+    return () => {
+      // unsubscribe();
+    };
+  }, []);
+
+  // Handle refresh action
+  const handleRefresh = () => {
+    loadServices(false); // Don't show full loading state, just refresh
+  };
+
+  // Show loading skeleton while services are loading
+  if (isLoading) {
+    return (
+      <div className="service-directory">
+        <div className="service-directory-header">
+          <LoadingSpinner size="large" />
+          <p>Loading services...</p>
+        </div>
+        <ServiceListSkeleton count={12} />
+      </div>
+    );
+  }
+
+  // Show error state if services failed to load
+  if (error && services.length === 0) {
+    return (
+      <ErrorBoundary
+        componentName="ServiceDirectory"
+        fallbackMessage="Unable to load services. Please check your connection and try again."
+      >
+        <div>Service loading failed</div>
+      </ErrorBoundary>
+    );
+  }
 
   const handleViewModeChange = (newViewMode) => {
     setViewMode(newViewMode);
@@ -171,14 +394,23 @@ const ServiceDirectory = () => {
 
   const handleBookingComplete = async (bookingData) => {
     try {
-      console.log('Processing booking completion:', bookingData);
+      console.log('Processing booking completion (mock):', bookingData);
       
-      // Submit booking through API
-      const bookingResult = await submitBooking({
+      // Simulate booking submission with mock response (backend in development)
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API delay
+      
+      const bookingResult = {
+        id: `mock_${Date.now()}`,
+        referenceNumber: `REF${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        status: 'confirmed',
         serviceId: selectedService?.id,
         serviceName: selectedService?.name,
+        date: bookingData.date,
+        time: bookingData.time,
         ...bookingData
-      });
+      };
+
+      console.log('Mock booking result:', bookingResult);
 
       // Show success notification with actions
       showSuccess(
@@ -214,20 +446,19 @@ const ServiceDirectory = () => {
       });
       setSelectedService(null);
 
-      // Refresh service availability
-      if (selectedService?.id) {
-        try {
-          await serviceDataManager.refreshServiceAvailability(selectedService.id);
-        } catch (error) {
-          console.warn('Failed to refresh service availability:', error);
-        }
-      }
+      // Skip service availability refresh (backend in development)
+      console.log('Service availability refresh skipped - backend in development');
+      
     } catch (error) {
       console.error('Booking completion failed:', error);
-      errorHandler.handleError(error, { 
+      
+      // Create mock error for development
+      const mockError = {
+        message: 'Mock booking error (backend in development)',
         context: 'booking',
-        serviceId: selectedService?.id 
-      });
+        serviceId: selectedService?.id
+      };
+      console.warn('Mock error:', mockError);
     }
   };
 
@@ -294,163 +525,6 @@ const ServiceDirectory = () => {
       return direction === 'asc' ? comparison : -comparison;
     });
   };
-
-  // Filter and sort services based on all criteria
-  const filteredAndSortedServices = useMemo(() => {
-    let filtered = services; // Use API services instead of mockServices
-
-    // Apply search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(service => 
-        service.name.toLowerCase().includes(searchLower) ||
-        service.description.toLowerCase().includes(searchLower) ||
-        service.department.toLowerCase().includes(searchLower) ||
-        service.category.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Apply category filter
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(service => 
-        service.category.toLowerCase() === selectedCategory
-      );
-    }
-
-    // Apply department filter
-    if (advancedFilters.departments.length > 0) {
-      filtered = filtered.filter(service =>
-        advancedFilters.departments.includes(service.department)
-      );
-    }
-
-    // Apply location filter
-    if (advancedFilters.locations.length > 0) {
-      filtered = filtered.filter(service =>
-        advancedFilters.locations.includes(service.location)
-      );
-    }
-
-    // Apply availability filter
-    if (advancedFilters.availability.length > 0) {
-      filtered = filtered.filter(service =>
-        advancedFilters.availability.includes(service.availability)
-      );
-    }
-
-    // Apply fee range filter
-    const { min, max } = advancedFilters.feeRange;
-    if (min > 0 || max < 10000) {
-      filtered = filtered.filter(service =>
-        service.fee >= min && service.fee <= max
-      );
-    }
-
-    // Apply sorting
-    return sortServices(filtered);
-  }, [services, searchTerm, selectedCategory, advancedFilters, sortConfig]);
-
-  // Calculate service counts for each category
-  const serviceCounts = useMemo(() => {
-    const counts = { all: services.length }; // Use API services instead of mockServices
-    
-    serviceCategories.forEach(category => {
-      if (category.id !== 'all') {
-        counts[category.id] = services.filter(service => 
-          service.category.toLowerCase() === category.id
-        ).length;
-      }
-    });
-
-    return counts;
-  }, [services]); // Update dependency
-
-  // Handle refresh action
-  const handleRefresh = () => {
-    loadServices(false); // Don't show full loading state, just refresh
-  };
-
-  // Show loading skeleton while services are loading
-  if (isLoading) {
-    return (
-      <div className="service-directory">
-        <div className="service-directory-header">
-          <LoadingSpinner size="large" />
-          <p>Loading services...</p>
-        </div>
-        <ServiceListSkeleton count={12} />
-      </div>
-    );
-  }
-
-  // Show error state if services failed to load
-  if (error && services.length === 0) {
-    return (
-      <ErrorBoundary
-        componentName="ServiceDirectory"
-        fallbackMessage="Unable to load services. Please check your connection and try again."
-      >
-        <div>Service loading failed</div>
-      </ErrorBoundary>
-    );
-  }
-
-  // Filter popular services based on current filters
-  const filteredPopularServices = useMemo(() => {
-    return sortServices(filteredAndSortedServices.filter(service => service.popular));
-  }, [filteredAndSortedServices]);
-
-  // Filter recently viewed services based on current filters  
-  const filteredRecentlyViewed = useMemo(() => {
-    const filtered = recentlyViewedServices.filter(service => {
-      // Apply same filters as main services
-      let matches = true;
-      
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        matches = matches && (
-          service.name.toLowerCase().includes(searchLower) ||
-          service.description.toLowerCase().includes(searchLower) ||
-          service.department.toLowerCase().includes(searchLower) ||
-          service.category.toLowerCase().includes(searchLower)
-        );
-      }
-      
-      if (selectedCategory !== 'all') {
-        matches = matches && (service.category.toLowerCase() === selectedCategory);
-      }
-
-      // Apply advanced filters
-      if (advancedFilters.departments.length > 0) {
-        matches = matches && advancedFilters.departments.includes(service.department);
-      }
-
-      if (advancedFilters.locations.length > 0) {
-        matches = matches && advancedFilters.locations.includes(service.location);
-      }
-
-      if (advancedFilters.availability.length > 0) {
-        matches = matches && advancedFilters.availability.includes(service.availability);
-      }
-
-      const { min, max } = advancedFilters.feeRange;
-      if (min > 0 || max < 10000) {
-        matches = matches && (service.fee >= min && service.fee <= max);
-      }
-      
-      return matches;
-    });
-
-    return sortServices(filtered);
-  }, [searchTerm, selectedCategory, advancedFilters, sortConfig]);
-
-  const hasActiveFilters = searchTerm || 
-                          selectedCategory !== 'all' ||
-                          advancedFilters.departments.length > 0 ||
-                          advancedFilters.locations.length > 0 ||
-                          advancedFilters.availability.length > 0 ||
-                          advancedFilters.feeRange.min > 0 ||
-                          advancedFilters.feeRange.max < 10000;
 
   const totalResults = filteredAndSortedServices.length;
 

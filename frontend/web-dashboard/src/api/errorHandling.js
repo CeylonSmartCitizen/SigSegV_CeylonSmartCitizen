@@ -1,35 +1,33 @@
-import { ERROR_TYPES } from './config.js';
+// Error types enumeration
+const ERROR_TYPES = {
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  TIMEOUT_ERROR: 'TIMEOUT_ERROR',
+  AUTHENTICATION_ERROR: 'AUTHENTICATION_ERROR',
+  AUTHORIZATION_ERROR: 'AUTHORIZATION_ERROR',
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  NOT_FOUND_ERROR: 'NOT_FOUND_ERROR',
+  CONFLICT_ERROR: 'CONFLICT_ERROR',
+  RATE_LIMIT_ERROR: 'RATE_LIMIT_ERROR',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  BOOKING_CONFLICT: 'BOOKING_CONFLICT',
+  PAYMENT_ERROR: 'PAYMENT_ERROR',
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR'
+};
 
+// ErrorHandler class for managing application errors
 class ErrorHandler {
   constructor() {
     this.errorSubscribers = new Set();
-    this.retryAttempts = new Map();
     this.errorHistory = [];
+    this.retryAttempts = new Map();
     this.maxHistorySize = 100;
     
-    // Setup global error handlers
-    this.setupG// Network error handler - returns error information for React components to handle
-export function handleNetworkError(error, onRetry) {
-  return {
-    type: 'network',
-    message: 'Network error occurred. Please check your connection.',
-    onRetry,
-    error
-  };
-}
+    // Setup global error handling
+    this.setupGlobalErrorHandling();
+  }
 
-// Booking conflict handler - returns conflict information for React components to handle
-export function handleBookingConflict(conflictInfo, onResolve) {
-  return {
-    type: 'booking_conflict',
-    message: `Booking conflict detected: ${conflictInfo.reason}`,
-    conflictInfo,
-    onResolve
-  };
-}}
-
-  // Setup global error handlers
-  setupGlobalHandlers() {
+  // Setup global error handling
+  setupGlobalErrorHandling() {
     // Handle unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
       console.error('Unhandled promise rejection:', event.reason);
@@ -37,11 +35,8 @@ export function handleBookingConflict(conflictInfo, onResolve) {
         type: ERROR_TYPES.UNKNOWN_ERROR,
         message: 'An unexpected error occurred',
         originalError: event.reason,
-        context: 'unhandled_rejection'
+        context: 'unhandled_promise_rejection'
       });
-      
-      // Prevent the default browser behavior
-      event.preventDefault();
     });
 
     // Handle global JavaScript errors
@@ -49,52 +44,45 @@ export function handleBookingConflict(conflictInfo, onResolve) {
       console.error('Global error:', event.error);
       this.handleError({
         type: ERROR_TYPES.UNKNOWN_ERROR,
-        message: event.message || 'An unexpected error occurred',
+        message: 'An unexpected error occurred',
         originalError: event.error,
-        context: 'global_error',
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno
+        context: 'global_error'
       });
     });
   }
 
-  // Handle errors with automatic retry logic
+  // Main error handling method
   async handleError(error, context = {}) {
     const errorId = this.generateErrorId();
-    const enhancedError = {
+    const timestamp = new Date().toISOString();
+    
+    const processedError = {
       id: errorId,
-      timestamp: Date.now(),
-      ...error,
+      timestamp,
+      type: error.type || ERROR_TYPES.UNKNOWN_ERROR,
+      message: error.message || 'An unknown error occurred',
+      originalError: error,
       context,
-      userAgent: navigator.userAgent,
-      url: window.location.href
+      userMessage: this.getUserFriendlyMessage(error),
+      isRetryable: this.isRetryableError(error),
+      retryOptions: this.getRetryOptions(error, context)
     };
 
     // Add to error history
-    this.addToHistory(enhancedError);
-
-    // Determine if error is retryable
-    const isRetryable = this.isRetryableError(error);
-    const retryOptions = isRetryable ? this.getRetryOptions(error, context) : null;
-
-    // Create user-friendly error message
-    const userMessage = this.getUserFriendlyMessage(error);
-
-    // Notify subscribers
-    this.notifySubscribers('error', {
-      error: enhancedError,
-      userMessage,
-      isRetryable,
-      retryOptions
-    });
+    this.addToHistory(processedError);
 
     // Log error for debugging
-    this.logError(enhancedError);
+    this.logError(processedError);
+
+    // Notify subscribers
+    this.notifySubscribers('error', processedError);
+
+    // Check if this error is retryable
+    const { isRetryable, retryOptions } = processedError;
 
     return {
       errorId,
-      userMessage,
+      processedError,
       isRetryable,
       retryOptions
     };
@@ -117,182 +105,170 @@ export function handleBookingConflict(conflictInfo, onResolve) {
     const messages = {
       [ERROR_TYPES.NETWORK_ERROR]: {
         title: 'Connection Problem',
-        message: 'Please check your internet connection and try again.',
-        icon: '🌐'
+        message: 'Unable to connect to our services. Please check your internet connection and try again.'
       },
       [ERROR_TYPES.TIMEOUT_ERROR]: {
         title: 'Request Timeout',
-        message: 'The request took too long to complete. Please try again.',
-        icon: '⏱️'
+        message: 'The request is taking longer than expected. Please try again.'
       },
       [ERROR_TYPES.AUTHENTICATION_ERROR]: {
         title: 'Authentication Required',
-        message: 'Please log in to continue.',
-        icon: '🔐'
+        message: 'Please log in to continue.'
+      },
+      [ERROR_TYPES.AUTHORIZATION_ERROR]: {
+        title: 'Access Denied',
+        message: 'You don\'t have permission to access this resource.'
       },
       [ERROR_TYPES.VALIDATION_ERROR]: {
-        title: 'Invalid Information',
-        message: 'Please check your input and try again.',
-        icon: '⚠️'
+        title: 'Invalid Data',
+        message: 'Please check your input and try again.'
       },
-      [ERROR_TYPES.BOOKING_CONFLICT]: {
-        title: 'Booking Conflict',
-        message: 'The selected time is no longer available.',
-        icon: '📅'
+      [ERROR_TYPES.NOT_FOUND_ERROR]: {
+        title: 'Not Found',
+        message: 'The requested resource could not be found.'
+      },
+      [ERROR_TYPES.CONFLICT_ERROR]: {
+        title: 'Conflict',
+        message: 'There was a conflict with your request.'
+      },
+      [ERROR_TYPES.RATE_LIMIT_ERROR]: {
+        title: 'Too Many Requests',
+        message: 'Please wait a moment before trying again.'
       },
       [ERROR_TYPES.SERVICE_UNAVAILABLE]: {
         title: 'Service Unavailable',
-        message: 'The service is temporarily unavailable. Please try again later.',
-        icon: '🚫'
+        message: 'Our services are temporarily unavailable. Please try again later.'
       },
-      [ERROR_TYPES.UNKNOWN_ERROR]: {
-        title: 'Unexpected Error',
-        message: 'Something went wrong. Please try again.',
-        icon: '❌'
+      [ERROR_TYPES.BOOKING_CONFLICT]: {
+        title: 'Booking Conflict',
+        message: 'The selected time slot is no longer available.'
+      },
+      [ERROR_TYPES.PAYMENT_ERROR]: {
+        title: 'Payment Failed',
+        message: 'Payment could not be processed. Please check your payment details.'
       }
     };
 
-    const errorInfo = messages[error.type] || messages[ERROR_TYPES.UNKNOWN_ERROR];
-
-    return {
-      ...errorInfo,
-      details: error.message,
-      timestamp: new Date().toLocaleString()
+    const defaultMessage = {
+      title: 'Unexpected Error',
+      message: 'Something went wrong. Please try again.'
     };
-  }
 
-  // Retry operation with error handling
-  async retryOperation(operationId, operation, context = {}) {
-    const currentAttempts = this.retryAttempts.get(operationId) || 0;
-    const maxAttempts = context.maxRetries || 3;
-
-    if (currentAttempts >= maxAttempts) {
-      throw new Error(`Maximum retry attempts (${maxAttempts}) exceeded for operation: ${operationId}`);
-    }
-
-    try {
-      // Increment retry count
-      this.retryAttempts.set(operationId, currentAttempts + 1);
-
-      // Wait before retry (except for first attempt)
-      if (currentAttempts > 0) {
-        const delay = 1000 * Math.pow(2, currentAttempts - 1); // Exponential backoff
-        await this.delay(delay);
-
-        // Notify about retry attempt
-        this.notifySubscribers('retryAttempt', {
-          operationId,
-          attempt: currentAttempts + 1,
-          maxAttempts,
-          delay
-        });
-      }
-
-      // Execute operation
-      const result = await operation();
-
-      // Clear retry count on success
-      this.retryAttempts.delete(operationId);
-
-      return result;
-
-    } catch (error) {
-      // If we can still retry, throw retry error
-      if (currentAttempts + 1 < maxAttempts) {
-        throw new Error(`Retry attempt ${currentAttempts + 1} failed, will retry again`);
-      }
-
-      // Clear retry count and throw final error
-      this.retryAttempts.delete(operationId);
-      throw error;
-    }
-  }
-
-  // Add error to history
-  addToHistory(error) {
-    this.errorHistory.unshift(error);
-    
-    // Limit history size
-    if (this.errorHistory.length > this.maxHistorySize) {
-      this.errorHistory = this.errorHistory.slice(0, this.maxHistorySize);
-    }
+    return messages[error.type] || defaultMessage;
   }
 
   // Subscribe to error events
   subscribe(callback) {
     this.errorSubscribers.add(callback);
     
+    // Return unsubscribe function
     return () => {
       this.errorSubscribers.delete(callback);
     };
   }
 
-  // Notify subscribers
+  // Notify all subscribers
   notifySubscribers(eventType, data) {
     this.errorSubscribers.forEach(callback => {
       try {
         callback(eventType, data);
       } catch (error) {
-        console.error('Error subscriber failed:', error);
+        console.error('Error in error handler subscriber:', error);
       }
     });
   }
 
+  // Add error to history
+  addToHistory(error) {
+    this.errorHistory.unshift(error);
+    
+    // Keep history size manageable
+    if (this.errorHistory.length > this.maxHistorySize) {
+      this.errorHistory = this.errorHistory.slice(0, this.maxHistorySize);
+    }
+  }
+
   // Generate unique error ID
   generateErrorId() {
-    return `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // Utility delay function
-  delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  // Log error for debugging
+  // Log error with appropriate level
   logError(error) {
-    console.error(`[${error.type}] ${error.message}`, error);
+    const logLevel = this.getLogLevel(error.type);
+    console[logLevel](`[ErrorHandler] ${error.type}:`, error);
   }
 
-  // Get retry options for error
+  // Get retry options for error type
   getRetryOptions(error, context) {
-    const operation = context.operation || 'operation';
-    const currentAttempts = this.retryAttempts.get(context.operationId) || 0;
-    const maxAttempts = context.maxRetries || 3;
+    const defaultOptions = {
+      maxRetries: 3,
+      baseDelay: 1000,
+      maxDelay: 10000
+    };
 
-    if (currentAttempts >= maxAttempts) {
-      return null;
-    }
-
-    const nextDelay = 1000 * Math.pow(2, currentAttempts);
+    const typeSpecificOptions = {
+      [ERROR_TYPES.NETWORK_ERROR]: {
+        maxRetries: 5,
+        baseDelay: 2000
+      },
+      [ERROR_TYPES.TIMEOUT_ERROR]: {
+        maxRetries: 3,
+        baseDelay: 1500
+      },
+      [ERROR_TYPES.RATE_LIMIT_ERROR]: {
+        maxRetries: 3,
+        baseDelay: 5000
+      }
+    };
 
     return {
-      canRetry: true,
-      currentAttempts,
-      maxAttempts,
-      nextDelay,
-      retryMessage: `Retry ${operation} (${currentAttempts + 1}/${maxAttempts})`
+      ...defaultOptions,
+      ...typeSpecificOptions[error.type],
+      ...context.retryOptions
     };
   }
+
+  // Get appropriate log level for error type
+  getLogLevel(errorType) {
+    const logLevels = {
+      [ERROR_TYPES.NETWORK_ERROR]: 'warn',
+      [ERROR_TYPES.TIMEOUT_ERROR]: 'warn',
+      [ERROR_TYPES.AUTHENTICATION_ERROR]: 'info',
+      [ERROR_TYPES.AUTHORIZATION_ERROR]: 'warn',
+      [ERROR_TYPES.VALIDATION_ERROR]: 'info',
+      [ERROR_TYPES.NOT_FOUND_ERROR]: 'info',
+      [ERROR_TYPES.CONFLICT_ERROR]: 'warn',
+      [ERROR_TYPES.RATE_LIMIT_ERROR]: 'warn',
+      [ERROR_TYPES.SERVICE_UNAVAILABLE]: 'error',
+      [ERROR_TYPES.BOOKING_CONFLICT]: 'info',
+      [ERROR_TYPES.PAYMENT_ERROR]: 'error'
+    };
+
+    return logLevels[errorType] || 'error';
+  }
 }
+
+// Export the ErrorHandler class
+export { ErrorHandler };
 
 // Create singleton instance
 const errorHandler = new ErrorHandler();
 
 export default errorHandler;
 
-// Legacy export for compatibility
-export async function apiRequestWithRetry(config, retries = 3, delay = 1000) {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const { apiClient } = await import('./index.js');
-      const response = await apiClient.request(config);
-      return response.data;
-    } catch (error) {
-      if (attempt < retries - 1) {
-        await new Promise(res => setTimeout(res, delay));
-      } else {
-        throw error;
-      }
-    }
-  }
+// Export convenience functions for easy use in components
+export async function handleNetworkError(networkError, context = {}) {
+  return errorHandler.handleError({
+    type: ERROR_TYPES.NETWORK_ERROR,
+    message: 'Network request failed',
+    originalError: networkError
+  }, context);
 }
+
+export function subscribeToErrors(callback) {
+  return errorHandler.subscribe(callback);
+}
+
+// Export error types for convenience
+export { ERROR_TYPES };

@@ -1,6 +1,7 @@
 import { bookingsAPI } from './index.js';
 import appointmentSyncManager from './appointmentSync.js';
 import serviceDataManager from './serviceDataManager.js';
+import { useCallback, createContext, useContext, useState } from 'react';
 
 class BookingManager {
   constructor() {
@@ -475,6 +476,9 @@ class BookingManager {
   }
 }
 
+// Export the BookingManager class
+export { BookingManager };
+
 // Create singleton instance
 const bookingManager = new BookingManager();
 
@@ -509,4 +513,55 @@ export async function submitBooking(bookingData) {
   } catch (error) {
     throw error;
   }
+}
+
+// React hook for booking functionality
+export function useBooking() {
+  const handleSubmitBooking = useCallback(async (bookingData) => {
+    return await submitBooking(bookingData);
+  }, []);
+
+  return {
+    submitBooking: handleSubmitBooking
+  };
+}
+
+// Booking Context
+const BookingContext = createContext();
+
+export function BookingProvider({ children }) {
+  const [bookingHistory, setBookingHistory] = useState([]);
+  const [currentBooking, setCurrentBooking] = useState(null);
+
+  const handleSubmitBooking = useCallback(async (bookingData) => {
+    setCurrentBooking(bookingData);
+    const result = await submitBooking(bookingData);
+    
+    if (result.success) {
+      setBookingHistory(prev => [result, ...prev]);
+      setCurrentBooking(null);
+    }
+    
+    return result;
+  }, []);
+
+  const value = {
+    bookingHistory,
+    currentBooking,
+    submitBooking: handleSubmitBooking
+  };
+
+  return (
+    <BookingContext.Provider value={value}>
+      {children}
+    </BookingContext.Provider>
+  );
+}
+
+export function useBookingContext() {
+  const context = useContext(BookingContext);
+  if (!context) {
+    throw new Error('useBookingContext must be used within a BookingProvider');
+  }
+  return context;
 }

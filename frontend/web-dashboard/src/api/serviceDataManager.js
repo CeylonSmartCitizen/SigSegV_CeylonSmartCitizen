@@ -371,3 +371,4 @@ class ServiceDataManager {
 const serviceDataManager = new ServiceDataManager();
 
 export default serviceDataManager;
+export { ServiceDataManager };

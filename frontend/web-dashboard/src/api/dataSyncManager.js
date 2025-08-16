@@ -1,3 +1,5 @@
+import { bookingsAPI, userAPI } from './index.js';
+
 class DataSyncManager {
   constructor() {
     this.syncQueue = [];
@@ -147,8 +149,6 @@ class DataSyncManager {
 
   // Sync appointment creation
   async syncAppointmentCreate(data) {
-    const { bookingsAPI } = await import('./index.js');
-    
     try {
       const result = await bookingsAPI.createBooking(data.bookingData);
       
@@ -167,8 +167,6 @@ class DataSyncManager {
 
   // Sync appointment update
   async syncAppointmentUpdate(data) {
-    const { bookingsAPI } = await import('./index.js');
-    
     const result = await bookingsAPI.updateBooking(data.appointmentId, data.updateData);
     
     // Update local storage
@@ -179,8 +177,6 @@ class DataSyncManager {
 
   // Sync appointment cancellation
   async syncAppointmentCancel(data) {
-    const { bookingsAPI } = await import('./index.js');
-    
     const result = await bookingsAPI.cancelBooking(data.appointmentId, data.reason);
     
     // Update local storage
@@ -191,8 +187,6 @@ class DataSyncManager {
 
   // Sync user profile update
   async syncUserProfileUpdate(data) {
-    const { userAPI } = await import('./index.js');
-    
     const result = await userAPI.updateProfile(data.profileData);
     
     // Update local storage
@@ -203,8 +197,6 @@ class DataSyncManager {
 
   // Sync preferences update
   async syncPreferencesUpdate(data) {
-    const { userAPI } = await import('./index.js');
-    
     const result = await userAPI.updateUserPreferences(data.preferences);
     
     // Update local storage
@@ -447,3 +439,4 @@ class DataSyncManager {
 const dataSyncManager = new DataSyncManager();
 
 export default dataSyncManager;
+export { DataSyncManager };

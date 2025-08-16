@@ -185,7 +185,7 @@ export const userAPI = {
 import { ServiceDataManager } from './serviceDataManager.js';
 import { DataSyncManager } from './dataSyncManager.js';
 import { CacheManager } from './cacheManager.js';
-import { BookingManager } from './booking.js';
+import { BookingManager } from './booking.jsx';
 import errorHandler, { ErrorHandler } from './errorHandling.js';
 
 // Export all APIs
