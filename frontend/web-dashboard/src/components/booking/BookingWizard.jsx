@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Calendar, Clock, User, FileText, CreditCard, CheckCircle } from 'lucide-react';
 import '../../styles/BookingWizard.css';
-import DateTimeSelection from './DateTimeSelection';
-import DocumentVerification from './DocumentVerification';
-import PersonalDetails from './PersonalDetails';
-import PaymentConfirmation from './PaymentConfirmation';
-import BookingConfirmation from './BookingConfirmation';
+import CalendarView from './CalendarView';
+import TimeSlotGrid from './TimeSlotGrid';
+import SmartScheduler from './SmartScheduler';
+import ServiceGrouping from './ServiceGrouping';
 
 const BookingWizard = ({ service, onClose, onComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -31,27 +30,27 @@ const BookingWizard = ({ service, onClose, onComplete }) => {
   const steps = [
     {
       id: 1,
-      title: 'Date & Time',
+      title: 'Select Dates',
       icon: Calendar,
-      description: 'Select appointment date and time'
+      description: 'Choose available dates and wait list if needed'
     },
     {
       id: 2,
-      title: 'Documents',
-      icon: FileText,
-      description: 'Verify required documents'
+      title: 'Time Slot & Business Hours',
+      icon: Clock,
+      description: 'Select time slot and view business hours/holidays'
     },
     {
       id: 3,
-      title: 'Personal Details',
-      icon: User,
-      description: 'Provide your information'
+      title: 'Smart Scheduling',
+      icon: Clock,
+      description: 'Get optimal time suggestions and estimated wait times'
     },
     {
       id: 4,
-      title: 'Payment',
-      icon: CreditCard,
-      description: 'Confirm payment details'
+      title: 'Service Grouping',
+      icon: User,
+      description: 'Group services and handle dependencies'
     },
     {
       id: 5,
@@ -60,71 +59,33 @@ const BookingWizard = ({ service, onClose, onComplete }) => {
       description: 'Review and confirm booking'
     }
   ];
-
-  const updateBookingData = (data) => {
-    setBookingData(prev => ({ ...prev, ...data }));
-  };
-
-  const handleNext = () => {
-    if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const canProceed = () => {
-    switch (currentStep) {
-      case 1:
-        return bookingData.selectedDate && bookingData.selectedTime;
-      case 2:
-        return Object.keys(bookingData.documents).length > 0;
-      case 3:
-        return bookingData.personalDetails.fullName && 
-               bookingData.personalDetails.nic && 
-               bookingData.personalDetails.email;
-      case 4:
-        return bookingData.paymentMethod;
-      default:
-        return true;
-    }
-  };
-
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <DateTimeSelection
-            service={service}
-            bookingData={bookingData}
-            onUpdate={updateBookingData}
+          <CalendarView
+            onDateSelect={(date) => updateBookingData({ selectedDate: date })}
+            onWaitList={(date) => updateBookingData({ waitListDate: date })}
           />
         );
       case 2:
         return (
-          <DocumentVerification
-            service={service}
-            bookingData={bookingData}
-            onUpdate={updateBookingData}
+          <TimeSlotGrid
+            selectedDate={bookingData.selectedDate}
+            onSlotSelect={(slot) => updateBookingData({ selectedTime: slot })}
           />
         );
       case 3:
         return (
-          <PersonalDetails
-            bookingData={bookingData}
-            onUpdate={updateBookingData}
+          <SmartScheduler
+            selectedDates={bookingData.selectedDate ? [bookingData.selectedDate] : []}
+            onOptimalSelect={(slot) => updateBookingData({ selectedTime: slot.slot })}
           />
         );
       case 4:
         return (
-          <PaymentConfirmation
-            service={service}
-            bookingData={bookingData}
-            onUpdate={updateBookingData}
+          <ServiceGrouping
+            onSequenceSelect={(services) => updateBookingData({ selectedServices: services })}
           />
         );
       case 5:
@@ -137,6 +98,21 @@ const BookingWizard = ({ service, onClose, onComplete }) => {
         );
       default:
         return null;
+    }
+  };
+
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1:
+        return bookingData.selectedDate;
+      case 2:
+        return bookingData.selectedTime;
+      case 3:
+        return bookingData.selectedTime;
+      case 4:
+        return bookingData.selectedServices && bookingData.selectedServices.length > 0;
+      default:
+        return true;
     }
   };
 

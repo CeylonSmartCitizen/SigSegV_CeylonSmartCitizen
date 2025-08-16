@@ -1,0 +1,4 @@
+.smart-scheduler { padding: 1rem; }
+.smart-scheduler ul { list-style: none; padding: 0; }
+.smart-scheduler li { margin-bottom: 0.75rem; background: #f1f8e9; border-radius: 4px; padding: 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+.smart-scheduler button { margin-left: 1rem; padding: 0.3rem 0.7rem; border-radius: 4px; border: none; background: #8bc34a; color: #fff; cursor: pointer; }
