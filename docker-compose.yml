@@ -77,11 +77,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
-      - REDIS_URL=redis://:ceylon123!@redis:6379
-      - JWT_SECRET=hackathon-super-secure-jwt-secret-key-2025
-      - PORT=3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:ceylon123!@postgres:5432/ceylon_smart_citizen
+      REDIS_URL: redis://:ceylon123!@redis:6379
+      JWT_SECRET: hackathon-super-secure-jwt-secret-key-2025
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:3001
+      APPOINTMENT_SERVICE_URL: http://appointment-service:3002
     depends_on:
       postgres:
         condition: service_healthy
