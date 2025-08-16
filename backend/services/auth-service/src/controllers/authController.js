@@ -169,7 +169,7 @@ class AuthController {
 
       // Generate JWT tokens
       const tokens = await jwtUtils.generateTokens({
-        userId: newUser.id,
+        id: newUser.id,
         email: newUser.email,
         first_name: newUser.first_name,
         last_name: newUser.last_name,
@@ -289,7 +289,7 @@ class AuthController {
 
       // Generate JWT tokens
       const tokens = await jwtUtils.generateTokens({
-        userId: user.id,
+        id: user.id,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
@@ -344,7 +344,7 @@ class AuthController {
    */
   static async getProfile(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       // Get complete user profile with preferences using UserDB
       const userProfile = await UserDB.getUserProfileWithPreferences(userId);
@@ -407,7 +407,7 @@ class AuthController {
    */
   static async updateProfile(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const updateData = req.body;
 
       // Update user profile using UserDB
@@ -462,7 +462,7 @@ class AuthController {
    */
   static async changePassword(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const language = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
 
       // Validate request body
@@ -563,7 +563,7 @@ class AuthController {
   static async logout(req, res) {
     try {
       const token = req.headers.authorization?.replace('Bearer ', '');
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       if (!token) {
         return res.status(400).json({
@@ -620,7 +620,7 @@ class AuthController {
    */
   static async globalLogout(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       // Blacklist all user tokens using TokenBlacklist
       const globalLogoutResult = await TokenBlacklist.blacklistAllUserTokens(
@@ -663,7 +663,7 @@ class AuthController {
    */
   static async getUserPreferences(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       const preferences = await UserPreferences.getUserPreferences(userId);
 
@@ -692,7 +692,7 @@ class AuthController {
    */
   static async updatePreferences(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const preferences = req.body;
 
       const updateResult = await UserPreferences.setUserPreferences(userId, preferences);
@@ -730,7 +730,7 @@ class AuthController {
    */
   static async saveUserLanguage(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id;
       const { language } = req.body;
 
       // Validate language
@@ -814,10 +814,19 @@ class AuthController {
       const { refreshToken } = value;
 
       try {
-        const decoded = jwtUtils.verifyRefreshToken(refreshToken);
+        const decoded = jwtUtils.verifyToken(refreshToken);
+        
+        // Check if this is actually a refresh token
+        if (decoded.type !== 'refresh') {
+          return res.status(401).json({
+            success: false,
+            message: 'Invalid token type',
+            code: 'INVALID_TOKEN_TYPE'
+          });
+        }
         
         // Check if user still exists and is active
-        const user = await UserDB.findUserById(decoded.userId);
+        const user = await UserDB.findUserById(decoded.id);
         if (!user || !user.is_active) {
           return res.status(401).json({
             success: false,
@@ -828,7 +837,7 @@ class AuthController {
 
         // Generate new tokens
         const tokens = await jwtUtils.generateTokens({
-          userId: user.id,
+          id: user.id,
           email: user.email,
           first_name: user.first_name,
           last_name: user.last_name,
@@ -1407,3 +1416,4 @@ class AuthController {
 }
 
 module.exports = AuthController;
+
