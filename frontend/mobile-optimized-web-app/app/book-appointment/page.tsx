@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 // Helper to decode JWT and extract payload
 function parseJwt(token: string): any {
   try {
@@ -18,6 +18,11 @@ import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 export default function BookAppointmentPage() {
+  // Helper to get today's date in yyyy-mm-dd
+  const getToday = () => {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
+  };
   const [servicesDebug, setServicesDebug] = useState<any>(null);
   const [departmentsDebug, setDepartmentsDebug] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
@@ -32,6 +37,38 @@ export default function BookAppointmentPage() {
   const [citizenId, setCitizenId] = useState<string>("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [dateError, setDateError] = useState("");
+
+  // Generate 15-min interval times between 08:00 and 16:45 (inclusive)
+  const getTimeOptions = () => {
+    const options: string[] = [];
+    for (let h = 8; h < 16; h++) {
+      for (let m = 0; m < 60; m += 15) {
+        const hour = h.toString().padStart(2, '0');
+        const min = m.toString().padStart(2, '0');
+        options.push(`${hour}:${min}`);
+      }
+    }
+    // Add 16:00, 16:15, 16:30, 16:45 only
+    for (let m = 0; m <= 45; m += 15) {
+      const hour = '16';
+      const min = m.toString().padStart(2, '0');
+      options.push(`${hour}:${min}`);
+    }
+    return options;
+  };
+  const timeOptions = getTimeOptions();
+  // Validate date: only allow today or future
+  const handleDateChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setDate(val);
+    if (val < getToday()) {
+      setDateError("Please select a future date.");
+    } else {
+      setDateError("");
+    }
+  };
+
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -82,7 +119,7 @@ export default function BookAppointmentPage() {
       })
       .catch((e) => {
         setServicesError("Could not load services. Please try again.");
-        setServicesDebug(prev => ({ ...(prev || {}), error: e?.message || String(e) }));
+  setServicesDebug((prev: Record<string, any>) => ({ ...(prev || {}), error: e?.message || String(e) }));
         console.error('Services API error:', e);
       })
       .finally(() => setLoadingServices(false));
@@ -115,7 +152,7 @@ export default function BookAppointmentPage() {
       })
       .catch((e) => {
         setDepartmentsError("Could not load departments. Please try again.");
-        setDepartmentsDebug(prev => ({ ...(prev || {}), error: e?.message || String(e) }));
+  setDepartmentsDebug((prev: Record<string, any>) => ({ ...(prev || {}), error: e?.message || String(e) }));
         console.error('Departments API error:', e);
       })
       .finally(() => setLoadingDepartments(false));
@@ -229,23 +266,28 @@ export default function BookAppointmentPage() {
                   className="w-full bg-white border border-gray-100 rounded-2xl px-5 text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 placeholder-gray-400 transition-all shadow-sm hover:shadow-md hover:border-blue-200"
                   style={{ color: '#111', background: '#fff', height: 56, fontSize: '1.13rem' }}
                   value={date}
-                  onChange={e => setDate(e.target.value)}
+                  min={getToday()}
+                  onChange={handleDateChange}
                   required
                   placeholder="Date"
                 />
+                {dateError && <div className="text-red-500 text-xs mt-1">{dateError}</div>}
               </div>
               <div className="w-1/2">
                 <label className="block text-base font-semibold text-gray-800 mb-2 tracking-tight" htmlFor="time">Time</label>
-                <input
+                <select
                   id="time"
-                  type="time"
                   className="w-full bg-white border border-gray-100 rounded-2xl px-5 text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 placeholder-gray-400 transition-all shadow-sm hover:shadow-md hover:border-blue-200"
                   style={{ color: '#111', background: '#fff', height: 56, fontSize: '1.13rem' }}
                   value={time}
                   onChange={e => setTime(e.target.value)}
                   required
-                  placeholder="Time"
-                />
+                >
+                  <option value="" disabled hidden>Time</option>
+                  {timeOptions.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="w-full">
@@ -261,7 +303,7 @@ export default function BookAppointmentPage() {
               />
             </div>
             {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-            <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-md hover:bg-blue-700 transition-colors disabled:opacity-60 mt-2" disabled={loading}>{loading ? "Booking..." : "Book Appointment"}</button>
+            <button type="submit" className="w-full bg-blue-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-md hover:bg-blue-700 transition-colors disabled:opacity-60 mt-2" disabled={loading || !!dateError}>{loading ? "Booking..." : "Book Appointment"}</button>
           </form>
         </div>
       </main>
