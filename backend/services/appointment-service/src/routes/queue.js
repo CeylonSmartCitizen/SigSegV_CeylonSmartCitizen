@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const queueController = require('../controllers/queueController');
 const queueService = require('../services/queueService');
+const serviceRepository = require('../repositories/serviceRepository');
+const auth = require('../middleware/auth');
 const { body, query, param, validationResult } = require('express-validator');
 const { v4: uuidv4, validate: isValidUUID } = require('uuid');
 
@@ -458,7 +460,7 @@ router.get('/statistics/:departmentId', [
  */
 router.get('/', [
     // Use the existing auth middleware
-    require('../middleware/auth')
+    auth
 ], async (req, res) => {
     try {
         const user_id = req.user?.id;
@@ -505,7 +507,7 @@ router.get('/', [
 router.post('/', [
     // Use the existing auth middleware
     require('../middleware/auth'),
-    // Add validation for required fields
+    // Add validation for required fields - only serviceId is required now
     body('serviceId')
         .notEmpty()
         .withMessage('serviceId is required')
@@ -515,28 +517,11 @@ router.post('/', [
             }
             return true;
         }),
-    body('departmentId')
-        .notEmpty()
-        .withMessage('departmentId is required')
-        .custom((value) => {
-            if (!isValidUUID(value)) {
-                throw new Error('departmentId must be a valid UUID');
-            }
-            return true;
-        }),
-    body('citizenId')
-        .optional()
-        .custom((value) => {
-            if (value && !isValidUUID(value)) {
-                throw new Error('citizenId must be a valid UUID');
-            }
-            return true;
-        }),
     handleValidationErrors
 ], async (req, res) => {
     try {
         const user_id = req.user?.id;
-        const { serviceId, departmentId, citizenId } = req.body;
+        const { serviceId } = req.body;
         
         if (!user_id) {
             return res.status(401).json({
@@ -545,12 +530,23 @@ router.post('/', [
             });
         }
 
-        // Use queue service to join queue
-        const result = await queueService.joinQueue({
+        // Get service details to derive department_id
+        const serviceRepository = require('../repositories/serviceRepository');
+        const service = await serviceRepository.getServiceById(serviceId);
+        
+        if (!service) {
+            return res.status(404).json({
+                success: false,
+                message: 'Service not found'
+            });
+        }
+
+        // Use queue service to join queue with auto-populated fields
+        const result = await queueService.joinQueueByService({
             user_id,
             service_id: serviceId,
-            department_id: departmentId,
-            citizen_id: citizenId || user_id
+            department_id: service.department_id, // Auto-derived from service
+            arrival_time: new Date().toISOString()
         });
         
         res.status(200).json({
@@ -562,12 +558,22 @@ router.post('/', [
     } catch (error) {
         console.error('Error joining queue:', error);
         
-        // Handle specific business logic errors (same as join endpoint)
+        // Handle specific business logic errors
         const errorMappings = {
             'APPOINTMENT_NOT_FOUND': {
                 status: 404,
                 code: 'APPOINTMENT_NOT_FOUND',
                 message: 'Appointment not found'
+            },
+            'SERVICE_NOT_FOUND': {
+                status: 404,
+                code: 'SERVICE_NOT_FOUND',
+                message: 'Service not found'
+            },
+            'DEPARTMENT_NOT_FOUND': {
+                status: 404,
+                code: 'DEPARTMENT_NOT_FOUND',
+                message: 'Department not found'
             },
             'ALREADY_IN_QUEUE': {
                 status: 409,
@@ -621,5 +627,23 @@ router.use((error, req, res, next) => {
         }
     });
 });
+
+/**
+ * GET /api/queue
+ * Get user's queue status (convenience route that redirects to /status)
+ */
+router.get('/', [
+    // Authentication middleware 
+    authenticateToken,
+    
+    // Rate limiting
+    rateLimit({
+        windowMs: 1 * 60 * 1000, // 1 minute
+        max: 30, // 30 requests per minute
+        message: 'Too many queue status requests, try again later',
+        standardHeaders: true,
+        legacyHeaders: false
+    })
+], queueController.getQueueStatus);
 
 module.exports = router;
