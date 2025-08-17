@@ -43,7 +43,12 @@ export default function ServicesPage() {
         ) : (
           <div className="w-full max-w-md mx-auto grid grid-cols-1 gap-5">
             {services.map(service => (
-              <div key={service.id} className="bg-white rounded-2xl shadow-md p-5 border border-gray-100 hover:shadow-lg transition-shadow cursor-pointer">
+              <a
+                key={service.id}
+                href={`/services/${service.id}`}
+                className="block bg-white rounded-2xl shadow-md p-5 border border-gray-100 hover:shadow-lg transition-shadow cursor-pointer text-inherit no-underline"
+                style={{ textDecoration: 'none' }}
+              >
                 <div className="text-lg font-semibold text-gray-900 mb-1">{service.name}</div>
                 {service.description && <div className="text-gray-600 text-sm mb-2">{service.description}</div>}
                 <div className="flex flex-wrap gap-2 text-xs text-gray-500">
@@ -51,7 +56,7 @@ export default function ServicesPage() {
                   {service.fee && <span className="bg-green-50 text-green-700 px-2 py-1 rounded">Fee: Rs. {service.fee}</span>}
                   {service.duration && <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded">Duration: {service.duration} min</span>}
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         )}
