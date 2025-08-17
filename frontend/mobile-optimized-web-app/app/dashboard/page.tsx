@@ -3,13 +3,36 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { FiBell } from "react-icons/fi";
 import dynamic from "next/dynamic";
 const SLGovLogo = dynamic(() => import("../../components/SLGovLogo"), { ssr: false });
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
+  const [notifCount, setNotifCount] = useState<number>(0);
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 1500);
+    // Fetch notification count
+    async function fetchNotifCount() {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
+        const profileRes = await fetch("/api/auth/profile", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const profileData = await profileRes.json();
+        const uid = profileData?.data?.user?.id || profileData?.user?.id;
+        if (!uid) return;
+        const res = await fetch(`/api/support/notifications/user/${uid}`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const notifications = Array.isArray(data) ? data : data.notifications || data.data || [];
+        setNotifCount(notifications.filter((n: any) => !n.isRead).length);
+      } catch {}
+    }
+    fetchNotifCount();
     return () => clearTimeout(t);
   }, []);
   if (loading) {
@@ -35,9 +58,19 @@ export default function DashboardPage() {
         boxSizing: "border-box",
       }}
     >
-      <header className="w-full px-4 pt-6 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
-        <h1 className="text-2xl font-bold text-black tracking-tight">Dashboard</h1>
-        <p className="text-gray-500 text-sm mt-1">Welcome to Ceylon Smart Citizen</p>
+      <header className="w-full px-4 pt-6 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-black tracking-tight">Dashboard</h1>
+          <p className="text-gray-500 text-sm mt-1">Welcome to Ceylon Smart Citizen</p>
+        </div>
+        <Link href="/notifications" className="relative ml-4" aria-label="Notifications">
+          <FiBell className="w-7 h-7 text-blue-600" />
+          {notifCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-bold min-w-[20px] text-center border-2 border-white shadow">
+              {notifCount}
+            </span>
+          )}
+        </Link>
       </header>
       <main className="flex-1 flex flex-col items-center justify-start px-4 w-full pt-8">
         {/* Quick Actions Section */}
