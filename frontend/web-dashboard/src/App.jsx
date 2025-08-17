@@ -10,7 +10,6 @@ import './components/common/LoadingStates.css'
 
 function App() {
   return (
-
     <div className="App">
       <ErrorBoundary
         componentName="App"
@@ -22,7 +21,6 @@ function App() {
           </BookingProvider>
         </NotificationProvider>
       </ErrorBoundary>
-
     </div>
   )
 }
