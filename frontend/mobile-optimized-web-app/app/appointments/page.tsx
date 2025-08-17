@@ -10,34 +10,66 @@ export default function AppointmentsPage() {
   const [error, setError] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [showModal, setShowModal] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelError, setCancelError] = useState<string>("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+
+  async function fetchAppointments() {
+    setLoading(true);
+    setError("");
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const res = await fetch("/api/appointments", {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.data && Array.isArray(data.data.appointments)) {
+        setAppointments(data.data.appointments);
+      } else if (res.ok && Array.isArray(data)) {
+        setAppointments(data);
+      } else if (res.ok && data.data && Array.isArray(data.data)) {
+        setAppointments(data.data);
+      } else {
+        setError(data.message || "Failed to load appointments");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-        const res = await fetch("/api/appointments", {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        const data = await res.json();
-        if (res.ok && data.success && data.data && Array.isArray(data.data.appointments)) {
-          setAppointments(data.data.appointments);
-        } else if (res.ok && Array.isArray(data)) {
-          setAppointments(data);
-        } else if (res.ok && data.data && Array.isArray(data.data)) {
-          setAppointments(data.data);
-        } else {
-          setError(data.message || "Failed to load appointments");
-        }
-      } catch (err) {
-        setError("Network error. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAppointments();
   }, []);
+
+  async function handleCancelAppointment(id: string) {
+    if (!id) return;
+    setCancellingId(id);
+    setCancelError("");
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const res = await fetch(`/api/appointments/appointments/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Failed to cancel appointment');
+      }
+      // Update UI
+      setAppointments(prev => prev.map(a => a.id === id || a._id === id ? { ...a, status: 'cancelled' } : a));
+    } catch (err: any) {
+      setCancelError(err.message || 'Failed to cancel appointment');
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   return (
     <div
@@ -88,18 +120,54 @@ export default function AppointmentsPage() {
                   >
                     View
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
-                      if (confirm('Are you sure you want to cancel this appointment?')) {
-                        // TODO: Implement cancel appointment API call
-                        alert('Cancel functionality will be implemented soon.');
-                      }
+                      if (appt.status === 'cancelled') return;
+                      setPendingCancelId(appt.id || appt._id);
+                      setShowCancelModal(true);
                     }}
-                    className="flex-1 bg-white border border-gray-200 text-black py-2 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
+                    className={`flex-1 bg-white border border-gray-200 text-black py-2 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors ${appt.status === 'cancelled' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={appt.status === 'cancelled' || cancellingId === (appt.id || appt._id)}
                   >
-                    Cancel
+                    {cancellingId === (appt.id || appt._id) ? 'Cancelling...' : appt.status === 'cancelled' ? 'Cancelled' : 'Cancel'}
                   </button>
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-xs mx-auto shadow-2xl p-6">
+            <h2 className="text-lg font-bold text-black mb-2 text-center">Cancel Appointment?</h2>
+            <p className="text-gray-700 text-center mb-6">Are you sure you want to cancel this appointment? This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button
+                className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg font-medium text-base hover:bg-gray-200 transition-colors"
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setPendingCancelId(null);
+                }}
+              >
+                No, Go Back
+              </button>
+              <button
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium text-base hover:bg-red-700 transition-colors"
+                onClick={async () => {
+                  if (pendingCancelId) {
+                    await handleCancelAppointment(pendingCancelId);
+                  }
+                  setShowCancelModal(false);
+                  setPendingCancelId(null);
+                }}
+                disabled={cancellingId === pendingCancelId}
+              >
+                {cancellingId === pendingCancelId ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
                 </div>
+                {cancelError && cancellingId === (appt.id || appt._id) && (
+                  <div className="text-xs text-red-500 mt-1 text-center">{cancelError}</div>
+                )}
               </div>
             ))
           )}

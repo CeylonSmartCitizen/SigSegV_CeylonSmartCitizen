@@ -45,6 +45,7 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold text-black mb-4 text-left">Quick Actions</h2>
           <div className="flex flex-col gap-4">
             <Link href="/book-appointment" className="block w-full bg-blue-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-sm hover:bg-blue-700 transition-colors text-center" style={{fontSize:18,minHeight:56}}>Book Appointment</Link>
+            <Link href="/appointments" className="block w-full bg-white border border-blue-600 text-blue-600 py-4 rounded-2xl font-semibold text-lg shadow-sm hover:bg-blue-50 transition-colors text-center" style={{fontSize:18,minHeight:56}}>My Bookings</Link>
             <Link href="/track-application" className="block w-full bg-white border border-blue-600 text-blue-600 py-4 rounded-2xl font-semibold text-lg shadow-sm hover:bg-blue-50 transition-colors text-center" style={{fontSize:18,minHeight:56}}>Track Application</Link>
           </div>
         </section>
