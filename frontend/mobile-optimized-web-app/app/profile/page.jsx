@@ -139,7 +139,17 @@ export default function ProfilePage() {
               {profile.occupation && <InfoRow label="Occupation" value={profile.occupation} />}
               {profile.nationality && <InfoRow label="Nationality" value={profile.nationality} />}
             </div>
+
             <button onClick={openEdit} className="mt-2 px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition">Edit Profile</button>
+            <button
+              onClick={() => {
+                localStorage.removeItem("accessToken");
+                router.push("/auth/login");
+              }}
+              className="mt-4 px-6 py-2 rounded-lg bg-red-500 text-white font-semibold shadow hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
 
             {/* Edit Modal */}
             {editOpen && (
