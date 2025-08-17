@@ -1,6 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+// Helper to decode JWT and extract payload
+function parseJwt(token: string): any {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -28,7 +41,14 @@ export default function BookAppointmentPage() {
   // Fetch services, departments, and user profile on mount
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("accessToken") || "test";
+    const token = localStorage.getItem("accessToken") || "";
+    // Decode citizenId from JWT
+    if (token) {
+      const payload = parseJwt(token);
+      if (payload && (payload.id || payload.userId || payload.sub)) {
+        setCitizenId(payload.id || payload.userId || payload.sub);
+      }
+    }
     setLoadingServices(true);
     setLoadingDepartments(true);
     setServicesError("");
@@ -99,14 +119,6 @@ export default function BookAppointmentPage() {
         console.error('Departments API error:', e);
       })
       .finally(() => setLoadingDepartments(false));
-    // Fetch user profile to get citizenId
-    fetch("/api/auth/profile", {
-      headers: { "Authorization": `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data?.data?.user?.id) setCitizenId(data.data.user.id);
-      });
   }, []);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -115,19 +127,19 @@ export default function BookAppointmentPage() {
     setError("");
     try {
       const token = localStorage.getItem("accessToken");
-      const res = await fetch("/api/appointments/appointments", {
+      const res = await fetch("/api/appointments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
-          serviceId,
-          departmentId,
-          citizenId,
-          appointmentDate: date,
-          appointmentTime: time,
-          description,
+          service_id: serviceId,
+          department_id: departmentId,
+          citizen_id: citizenId,
+          preferred_date: date,
+          preferred_time: time,
+          notes: description,
         }),
       });
       const data = await res.json();

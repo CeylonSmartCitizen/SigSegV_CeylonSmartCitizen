@@ -1,8 +1,16 @@
 "use client";
 
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
+  const router = useRouter();
+  function handleLogout(e: React.MouseEvent) {
+    e.preventDefault();
+    localStorage.removeItem("accessToken");
+  router.push("/auth/login");
+  }
   return (
     <div
       className="min-h-screen flex flex-col bg-white"
@@ -40,7 +48,14 @@ export default function ProfilePage() {
           </div>
           <div className="mt-8 space-y-3">
             <Link href="#" className="block w-full bg-blue-600 text-white py-4 rounded-2xl font-semibold text-lg shadow-sm hover:bg-blue-700 transition-colors" style={{fontSize:18,minHeight:56}}>Edit Profile</Link>
-            <Link href="#" className="block w-full bg-white border border-gray-200 text-black py-4 rounded-2xl font-semibold text-lg shadow-sm hover:bg-gray-50 transition-colors" style={{fontSize:18,minHeight:56}}>Logout</Link>
+            <button
+              onClick={handleLogout}
+              className="block w-full bg-white border border-gray-200 text-black py-4 rounded-2xl font-semibold text-lg shadow-sm hover:bg-gray-50 transition-colors"
+              style={{fontSize:18,minHeight:56}}
+              type="button"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </main>

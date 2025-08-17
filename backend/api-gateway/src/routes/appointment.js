@@ -24,52 +24,10 @@ function getEssentialHeaders(req) {
 
 
 
-// Proxy root /appointments requests
-router.get('/', async (req, res, next) => {
-  // GET /api/appointments -> /api/appointments (direct proxy to working endpoint)
-  const url = `${APPOINTMENT_SERVICE_URL}/api/appointments`;
-  try {
-    const response = await axios({
-      method: 'GET',
-      url,
-      headers: getEssentialHeaders(req),
-      params: req.query,
-      validateStatus: () => true
-    });
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Proxy /appointments root (list, create) and /appointments/appointments
-router.get('/appointments', async (req, res, next) => {
-  // GET /api/appointments -> /api/appointments (direct proxy to working endpoint)
-  const url = `${APPOINTMENT_SERVICE_URL}/api/appointments`;
-  try {
-    const response = await axios({
-      method: 'GET',
-      url,
-      headers: getEssentialHeaders(req),
-      params: req.query,
-      validateStatus: () => true
-    });
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    next(error);
-  }
-});
-
+// Proxy /appointments/* routes first (more specific routes)
 router.use('/appointments', async (req, res, next) => {
-  let targetPath;
-  if (req.url.startsWith('/appointments')) {
-    // /api/appointments/appointments... -> /api/appointments/appointments...
-    targetPath = '/api/appointments' + req.url;
-  } else {
-    // /api/appointments/anything-else -> /api/appointments/appointments/anything-else
-    targetPath = '/api/appointments/appointments' + req.url;
-  }
-  const url = `${APPOINTMENT_SERVICE_URL}${targetPath}`;
+  // /api/appointments/appointments/* -> /api/appointments/appointments/*
+  const url = `${APPOINTMENT_SERVICE_URL}/api/appointments/appointments${req.url}`;
   try {
     const response = await axios({
       method: req.method,
@@ -77,6 +35,42 @@ router.use('/appointments', async (req, res, next) => {
       headers: getEssentialHeaders(req),
       data: req.body,
       params: req.query,
+      validateStatus: () => true
+    });
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Proxy root /appointments requests (less specific, comes after)
+router.get('/', async (req, res, next) => {
+  // GET /api/appointments -> /api/appointments (list all appointments)
+  const url = `${APPOINTMENT_SERVICE_URL}/api/appointments`;
+  try {
+    const response = await axios({
+      method: 'GET',
+      url,
+      headers: getEssentialHeaders(req),
+      params: req.query,
+      validateStatus: () => true
+    });
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Proxy POST requests to create appointments
+router.post('/', async (req, res, next) => {
+  // POST /api/appointments -> /api/appointments (appointment service root)
+  const url = `${APPOINTMENT_SERVICE_URL}/api/appointments`;
+  try {
+    const response = await axios({
+      method: 'POST',
+      url,
+      headers: getEssentialHeaders(req),
+      data: req.body,
       validateStatus: () => true
     });
     res.status(response.status).json(response.data);
