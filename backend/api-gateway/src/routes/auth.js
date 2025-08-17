@@ -33,6 +33,7 @@ function getEssentialHeaders(req) {
 // Proxy registration
 router.post('/register', async (req, res) => {
   try {
+
     console.log('Gateway: Received register request');
     console.log('Gateway: Proxying to:', `${AUTH_SERVICE_URL}/api/auth/register`);
     console.log('Gateway: Request body:', req.body);
@@ -45,6 +46,7 @@ router.post('/register', async (req, res) => {
     console.log('Gateway: Auth service response status:', response.status);
     console.log('Gateway: Auth service response data:', response.data);
     
+
     res.status(response.status).json(response.data);
   } catch (error) {
     console.error('Gateway: Error proxying to auth service:', error.message);
@@ -203,7 +205,7 @@ router.post('/global-logout', authenticateToken, async (req, res) => {
 // Proxy health check
 router.get('/health', async (req, res) => {
   try {
-    const response = await axios.get(`${AUTH_SERVICE_URL}/health`, { headers: getEssentialHeaders(req) });
+    const response = await axios.get(`${AUTH_SERVICE_URL}/api/auth/health`, { headers: getEssentialHeaders(req) });
     res.status(response.status).json(response.data);
   } catch (error) {
     if (error.response) {
