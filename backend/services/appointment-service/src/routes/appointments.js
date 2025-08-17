@@ -1,3 +1,12 @@
+// Catch-all for GET / (handles /api/appointments and /api/appointments/)
+router.get(['/', ''], (req, res, next) => {
+	// Log the path for debugging
+	console.log('Appointments router received GET:', req.originalUrl, req.path);
+	return appointmentController.getAppointments(req, res, next);
+});
+// Also respond to GET / and GET ''
+router.get('/', appointmentController.getAppointments);
+router.get('', appointmentController.getAppointments);
 const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointmentController');
@@ -18,13 +27,14 @@ const { validateCreateAppointment, validateUpdateAppointment } = require('../mid
 // Protect all routes with JWT auth middleware
 // router.use(auth); // COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE AUTH
 
+
 // Create Appointment
-router.post('/', validateCreateAppointment, appointmentController.createAppointment);
+router.post('/appointments', validateCreateAppointment, appointmentController.createAppointment);
 
 // View Appointments (with optional filters/pagination)
-router.get('/', appointmentController.getAppointments);
+router.get('/appointments', appointmentController.getAppointments);
 
 // Update/Cancel Appointment
-router.put('/:id', validateUpdateAppointment, appointmentController.updateAppointment);
+router.put('/appointments/:id', validateUpdateAppointment, appointmentController.updateAppointment);
 
 module.exports = router;

@@ -7,7 +7,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3003', 'http://localhost:3001', 'http://localhost:3000', 'http://127.0.0.1:3003', 'http://127.0.0.1:3001', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Health check endpoint

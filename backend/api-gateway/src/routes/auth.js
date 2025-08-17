@@ -17,7 +17,7 @@ try {
 }
 
 // Base URL for the auth service (update if needed)
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3000';
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 
 
 // Helper to pick only essential headers
@@ -33,12 +33,27 @@ function getEssentialHeaders(req) {
 // Proxy registration
 router.post('/register', async (req, res) => {
   try {
-    const response = await axios.post(`${AUTH_SERVICE_URL}/register`, req.body, { headers: getEssentialHeaders(req) });
+    console.log('Gateway: Received register request');
+    console.log('Gateway: Proxying to:', `${AUTH_SERVICE_URL}/api/auth/register`);
+    console.log('Gateway: Request body:', req.body);
+    
+    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/register`, req.body, { 
+      headers: getEssentialHeaders(req),
+      timeout: 5000
+    });
+    
+    console.log('Gateway: Auth service response status:', response.status);
+    console.log('Gateway: Auth service response data:', response.data);
+    
     res.status(response.status).json(response.data);
   } catch (error) {
+    console.error('Gateway: Error proxying to auth service:', error.message);
     if (error.response) {
+      console.log('Gateway: Error response status:', error.response.status);
+      console.log('Gateway: Error response data:', error.response.data);
       res.status(error.response.status).json(error.response.data);
     } else {
+      console.log('Gateway: Network error or timeout');
       res.status(500).json({ success: false, message: 'Auth service unavailable' });
     }
   }
@@ -47,7 +62,7 @@ router.post('/register', async (req, res) => {
 // Proxy login
 router.post('/login', async (req, res) => {
   try {
-    const response = await axios.post(`${AUTH_SERVICE_URL}/login`, req.body, { headers: getEssentialHeaders(req) });
+    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/login`, req.body, { headers: getEssentialHeaders(req) });
     res.status(response.status).json(response.data);
   } catch (error) {
     if (error.response) {
