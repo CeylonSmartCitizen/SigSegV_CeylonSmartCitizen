@@ -62,7 +62,7 @@ export default function AIChatPage() {
           <div ref={chatEndRef} />
         </div>
       </main>
-  <form onSubmit={sendMessage} className="w-full max-w-2xl mx-auto flex gap-2 px-4 py-2 fixed" style={{ left: 0, right: 0, bottom: 72, margin: '0 auto', maxWidth: 600, zIndex: 60, background: 'rgba(255,255,255,0.97)', borderTopLeftRadius: 24, borderTopRightRadius: 24, boxShadow: '0 -2px 16px 0 #0001' }}>
+  <form onSubmit={sendMessage} className="w-full mx-auto flex gap-2 px-2 py-2 fixed" style={{ left: 0, right: 0, bottom: 72, margin: '0 auto', maxWidth: 430, zIndex: 60, background: 'rgba(255,255,255,0.97)', borderTopLeftRadius: 24, borderTopRightRadius: 24, boxShadow: '0 -2px 16px 0 #0001' }}>
         <input
           type="text"
           className="flex-1 rounded-2xl border border-gray-200 px-5 py-4 text-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-all"
