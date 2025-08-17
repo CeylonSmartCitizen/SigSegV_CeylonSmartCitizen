@@ -169,7 +169,7 @@ class AuthController {
 
       // Generate JWT tokens
       const tokens = await jwtUtils.generateTokens({
-        userId: newUser.id,
+        id: newUser.id, // Fixed: changed from userId to id
         email: newUser.email,
         first_name: newUser.first_name,
         last_name: newUser.last_name,
@@ -289,7 +289,7 @@ class AuthController {
 
       // Generate JWT tokens
       const tokens = await jwtUtils.generateTokens({
-        userId: user.id,
+        id: user.id, // Fixed: changed from userId to id
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
@@ -344,7 +344,7 @@ class AuthController {
    */
   static async getProfile(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id; // Fixed: changed from req.user.userId to req.user.id
 
       // Get complete user profile with preferences using UserDB
       const userProfile = await UserDB.getUserProfileWithPreferences(userId);
@@ -407,7 +407,7 @@ class AuthController {
    */
   static async updateProfile(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id; // Fixed: changed from userId to id
       const updateData = req.body;
 
       // Update user profile using UserDB
@@ -462,7 +462,7 @@ class AuthController {
    */
   static async changePassword(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id; // Fixed: changed from userId to id
       const language = req.headers['accept-language']?.split(',')[0]?.split('-')[0] || 'en';
 
       // Validate request body
@@ -563,7 +563,7 @@ class AuthController {
   static async logout(req, res) {
     try {
       const token = req.headers.authorization?.replace('Bearer ', '');
-      const userId = req.user.userId;
+      const userId = req.user.id; // Fixed: changed from userId to id
 
       if (!token) {
         return res.status(400).json({
@@ -620,7 +620,7 @@ class AuthController {
    */
   static async globalLogout(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id; // Fixed: changed from userId to id
 
       // Blacklist all user tokens using TokenBlacklist
       const globalLogoutResult = await TokenBlacklist.blacklistAllUserTokens(
@@ -663,7 +663,7 @@ class AuthController {
    */
   static async getUserPreferences(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id; // Fixed: changed from userId to id
 
       const preferences = await UserPreferences.getUserPreferences(userId);
 
@@ -692,7 +692,7 @@ class AuthController {
    */
   static async updatePreferences(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id; // Fixed: changed from userId to id
       const preferences = req.body;
 
       const updateResult = await UserPreferences.setUserPreferences(userId, preferences);
@@ -730,7 +730,7 @@ class AuthController {
    */
   static async saveUserLanguage(req, res) {
     try {
-      const userId = req.user.userId;
+      const userId = req.user.id; // Fixed: changed from userId to id
       const { language } = req.body;
 
       // Validate language
@@ -828,7 +828,7 @@ class AuthController {
 
         // Generate new tokens
         const tokens = await jwtUtils.generateTokens({
-          userId: user.id,
+          id: user.id, // Fixed: changed from userId to id
           email: user.email,
           first_name: user.first_name,
           last_name: user.last_name,
@@ -868,7 +868,7 @@ class AuthController {
   static async getActiveSessions(req, res) {
     try {
       const SessionManager = require('../utils/sessionManager');
-      const sessions = await SessionManager.getActiveSessions(req.user.user_id);
+      const sessions = await SessionManager.getActiveSessions(req.user.id);
 
       res.json({
         success: true,
@@ -905,7 +905,7 @@ class AuthController {
       const { sessionId } = req.params;
       const SessionManager = require('../utils/sessionManager');
       
-      const loggedOutSession = await SessionManager.logoutSession(sessionId, req.user.user_id);
+      const loggedOutSession = await SessionManager.logoutSession(sessionId, req.user.id);
       
       if (!loggedOutSession) {
         return res.status(404).json({
@@ -940,7 +940,7 @@ class AuthController {
   static async logoutAllSessions(req, res) {
     try {
       const SessionManager = require('../utils/sessionManager');
-      const result = await SessionManager.logoutAllSessions(req.user.user_id);
+      const result = await SessionManager.logoutAllSessions(req.user.id);
 
       res.json({
         success: true,
@@ -967,7 +967,7 @@ class AuthController {
   static async deactivateAccount(req, res) {
     try {
       const { reason, password } = req.body;
-      const userId = req.user.user_id;
+      const userId = req.user.id;
 
       // Verify password before deactivation
       const userResult = await db.query('SELECT password_hash FROM users WHERE id = $1', [userId]);
@@ -1038,11 +1038,11 @@ class AuthController {
   static async exportUserData(req, res) {
     try {
       const DataExporter = require('../utils/dataExporter');
-      const exportResult = await DataExporter.exportUserData(req.user.user_id);
+      const exportResult = await DataExporter.exportUserData(req.user.id);
 
       // Log the export request
       await DataExporter.logExportRequest(
-        req.user.user_id,
+        req.user.id,
         req.ip,
         req.get('User-Agent')
       );
@@ -1074,7 +1074,7 @@ class AuthController {
   static async setupTwoFactor(req, res) {
     try {
       const TwoFactorAuth = require('../utils/twoFactorAuth');
-      const setupResult = await TwoFactorAuth.setupTwoFactor(req.user.user_id);
+      const setupResult = await TwoFactorAuth.setupTwoFactor(req.user.id);
 
       res.json({
         success: true,
@@ -1112,7 +1112,7 @@ class AuthController {
       }
 
       const TwoFactorAuth = require('../utils/twoFactorAuth');
-      const verificationResult = await TwoFactorAuth.verifyTwoFactor(req.user.user_id, code);
+      const verificationResult = await TwoFactorAuth.verifyTwoFactor(req.user.id, code);
 
       res.json({
         success: true,
@@ -1148,7 +1148,7 @@ class AuthController {
       }
 
       const TwoFactorAuth = require('../utils/twoFactorAuth');
-      const disableResult = await TwoFactorAuth.disableTwoFactor(req.user.user_id, password);
+      const disableResult = await TwoFactorAuth.disableTwoFactor(req.user.id, password);
 
       res.json({
         success: true,

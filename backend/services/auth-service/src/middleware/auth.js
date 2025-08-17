@@ -20,6 +20,7 @@ const authenticateToken = async (req, res, next) => {
 
     // Verify the token
     const decoded = jwtUtils.verifyToken(token);
+    console.log('✅ Token decoded successfully:', { id: decoded.id, email: decoded.email, type: decoded.type });
 
     // Check if token is access token (not refresh token)
     if (decoded.type !== 'access') {
@@ -52,7 +53,9 @@ const authenticateToken = async (req, res, next) => {
 
     // Optional: Verify user still exists and is active
     const userQuery = 'SELECT id, email, first_name, last_name, nic_number, is_active FROM users WHERE id = $1';
+    console.log('🔍 Looking for user with ID:', decoded.id);
     const userResult = await db.query(userQuery, [decoded.id]);
+    console.log('📊 User query result:', userResult.rows.length, 'rows found');
 
     if (userResult.rows.length === 0) {
       return res.status(401).json({
