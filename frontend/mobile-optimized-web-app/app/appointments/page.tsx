@@ -1,10 +1,14 @@
 "use client";
 
 
+
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+
+
 
 export default function AppointmentsPage() {
+
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,6 +18,7 @@ export default function AppointmentsPage() {
   const [cancelError, setCancelError] = useState<string>("");
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+
 
   async function fetchAppointments() {
     setLoading(true);
@@ -39,6 +44,7 @@ export default function AppointmentsPage() {
       setLoading(false);
     }
   }
+
 
   useEffect(() => {
     fetchAppointments();
@@ -71,6 +77,7 @@ export default function AppointmentsPage() {
     }
   }
 
+
   return (
     <div
       className="min-h-screen flex flex-col bg-white"
@@ -88,7 +95,8 @@ export default function AppointmentsPage() {
         <p className="text-gray-500 text-sm mt-1">View and manage your appointments</p>
       </header>
       <main className="flex-1 flex flex-col items-center px-4 w-full">
-        <div className="w-full max-w-xs mx-auto mt-6 space-y-4">
+        {/* Appointments List Section */}
+        <div className="w-full max-w-xs mx-auto space-y-4">
           {loading ? (
             <div className="text-center text-gray-400 text-base py-12">Loading appointments...</div>
           ) : error ? (
