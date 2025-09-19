@@ -145,7 +145,7 @@ class QueueRepository {
      * @param {string} appointmentId - UUID of the appointment
      * @returns {Object} Queue entry details
      */
-    async joinQueue(queueSessionId, appointmentId) {
+    async joinQueue(queueSessionId, appointmentId, userId = null) {
         try {
             // Start transaction
             await db.query('BEGIN');
@@ -164,11 +164,12 @@ class QueueRepository {
                 INSERT INTO queue_entries (
                     queue_session_id,
                     appointment_id,
+                    user_id,
                     position,
                     status,
                     estimated_wait_minutes
                 )
-                VALUES ($1, $2, $3, $4, $5)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 RETURNING *
             `;
             
@@ -185,7 +186,7 @@ class QueueRepository {
             
             const estimatedWait = (nextPosition - 1) * avgServiceTime;
             
-            const values = [queueSessionId, appointmentId, nextPosition, 'waiting', estimatedWait];
+            const values = [queueSessionId, appointmentId, userId, nextPosition, 'waiting', estimatedWait];
             const result = await db.query(insertQuery, values);
             
             // Update queue session current position if this is the first entry
@@ -217,6 +218,7 @@ class QueueRepository {
             let query, values;
             
             if (appointmentId) {
+                // Appointment-based queue lookup
                 query = `
                     SELECT 
                         qe.*,
@@ -239,23 +241,23 @@ class QueueRepository {
                 `;
                 values = [appointmentId, userId];
             } else {
-                // Get latest queue entry for user
+                // Service-based queue lookup (covers both appointment-based and service-based entries)
                 query = `
                     SELECT 
                         qe.*,
                         qs.current_position,
                         qs.department_id,
                         qs.service_id,
-                        a.token_number,
+                        COALESCE(a.token_number, CONCAT('Q', LPAD(qe.position::text, 3, '0'))) as token_number,
                         s.name as service_name,
                         d.name as department_name,
                         (qe.position - qs.current_position) as people_ahead
                     FROM queue_entries qe
                     JOIN queue_sessions qs ON qs.id = qe.queue_session_id
-                    JOIN appointments a ON a.id = qe.appointment_id
-                    JOIN services s ON s.id = a.service_id
-                    JOIN departments d ON d.id = s.department_id
-                    WHERE a.user_id = $1
+                    LEFT JOIN appointments a ON a.id = qe.appointment_id
+                    JOIN services s ON s.id = qs.service_id
+                    JOIN departments d ON d.id = qs.department_id
+                    WHERE (qe.user_id = $1 OR (a.user_id = $1 AND qe.appointment_id IS NOT NULL))
                     AND qe.status IN ('waiting', 'called')
                     AND qs.session_date = CURRENT_DATE
                     ORDER BY qe.created_at DESC

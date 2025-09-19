@@ -545,6 +545,75 @@ class QueueService {
     async generateQueueInsights(analytics) { return {}; }
     async getHistoricalTrends(departmentId, date) { return {}; }
     async generateRecommendations(analytics) { return {}; }
+
+    /**
+     * Join queue directly with service ID (simplified flow)
+     * @param {Object} data - Join queue request data
+     * @param {string} data.service_id - UUID of the service
+     * @param {string} data.user_id - UUID of the user
+     * @param {string} data.department_id - UUID of the department (optional, derived from service)
+     * @param {string} data.arrival_time - ISO date string (optional)
+     * @returns {Object} Queue entry with position and wait time
+     */
+    async joinQueueByService(data) {
+        const { service_id, user_id, department_id, arrival_time } = data;
+        
+        try {
+            // 1. Validate service exists
+            const service = await serviceRepository.getServiceById(service_id);
+            if (!service) {
+                throw new Error('SERVICE_NOT_FOUND');
+            }
+            
+            console.log('Service object:', JSON.stringify(service, null, 2));
+
+            // 2. Use provided department_id or derive from service
+            const finalDepartmentId = department_id || service.department?.id;
+            
+            console.log('Department ID:', finalDepartmentId);
+            
+            if (!finalDepartmentId) {
+                throw new Error('DEPARTMENT_NOT_FOUND');
+            }
+            
+            // 3. Get or create queue session for today
+            const today = new Date().toISOString().split('T')[0];
+            const queueSession = await queueRepository.getOrCreateQueueSession(
+                finalDepartmentId, 
+                service_id, 
+                today
+            );
+            
+            // 4. Join the queue without requiring an appointment ID
+            // For service-based queuing, appointment_id can be null but user_id is required
+            const queueEntry = await queueRepository.joinQueue(
+                queueSession.id, 
+                null,  // No appointment required for service-based queuing
+                user_id  // Pass user_id for service-based queuing
+            );
+
+            // 6. Calculate estimated wait time (15 minutes per position)
+            const estimatedWait = queueEntry.position * 15;
+
+            return {
+                success: true,
+                queueId: queueEntry.id,
+                position: queueEntry.position,
+                estimatedWaitMinutes: estimatedWait,
+                service: {
+                    id: service.id,
+                    name: service.name,
+                    department: service.department?.name
+                },
+                joinedAt: queueEntry.joined_at || new Date().toISOString(),
+                message: `Successfully joined queue for ${service.name}. Position: ${queueEntry.position}`
+            };
+
+        } catch (error) {
+            console.error('Error joining queue by service:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = new QueueService();

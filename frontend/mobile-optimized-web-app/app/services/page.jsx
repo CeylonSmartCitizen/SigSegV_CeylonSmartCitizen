@@ -1,0 +1,108 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { getUniqueDepartments } from "./departmentUtils";
+
+export default function ServicesPage() {
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedDept, setSelectedDept] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    async function fetchServices() {
+      setLoading(true);
+      setError("");
+      try {
+        const token = localStorage.getItem("accessToken") || "test";
+        const res = await fetch("/api/appointments/services", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error?.message || data?.message || "Failed to fetch services");
+        setServices(data?.data?.services || []);
+      } catch (err) {
+        setError(err.message || "Failed to fetch services");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchServices();
+  }, []);
+
+  // Get unique departments for filter dropdown
+  const departments = getUniqueDepartments(services);
+  // Filter services by selected department and search
+  const filteredServices = services.filter(s => {
+    const matchesDept = selectedDept ? (s.department && s.department.id === selectedDept) : true;
+    const matchesSearch = search.trim() === "" ? true : (
+      (s.name && s.name.toLowerCase().includes(search.toLowerCase())) ||
+      (s.description && s.description.toLowerCase().includes(search.toLowerCase()))
+    );
+    return matchesDept && matchesSearch;
+  });
+
+  return (
+    <div className="min-h-screen flex flex-col bg-white" style={{ maxWidth: 430, margin: "0 auto", fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif", paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)", boxSizing: "border-box" }}>
+      <header className="w-full px-4 pt-6 pb-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+        <h1 className="text-2xl font-bold text-black tracking-tight">Services</h1>
+        <div className="mt-4 flex flex-col gap-3">
+          <input
+            type="text"
+            placeholder="Search services..."
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ color: '#111', backgroundColor: '#fff', fontWeight: 500 }}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {departments.length > 0 && (
+            <div>
+              <label htmlFor="department-filter" className="block text-sm font-medium text-gray-700 mb-1">Filter by Department:</label>
+              <select
+                id="department-filter"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-base bg-white text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ color: '#111', backgroundColor: '#fff', fontWeight: 500 }}
+                value={selectedDept}
+                onChange={e => setSelectedDept(e.target.value)}
+              >
+                <option value="" style={{ color: '#222', backgroundColor: '#fff', fontWeight: 600 }}>All Departments</option>
+                {departments.map(dept => (
+                  <option key={dept.id} value={dept.id} style={{ color: '#222', backgroundColor: '#fff', fontWeight: 600 }}>{dept.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      </header>
+      <main className="flex-1 flex flex-col items-center justify-start px-4 w-full pt-8">
+        {loading ? (
+          <div className="text-gray-500 text-center py-10">Loading services...</div>
+        ) : error ? (
+          <div className="text-red-500 text-center py-10">{error}</div>
+        ) : filteredServices.length === 0 ? (
+          <div className="text-gray-500 text-center py-10">No services available.</div>
+        ) : (
+          <div className="w-full max-w-md mx-auto grid grid-cols-1 gap-5">
+            {filteredServices.map(service => (
+              <a
+                key={service.id}
+                href={`/services/${service.id}`}
+                className="block bg-white rounded-2xl shadow-md p-5 border border-gray-100 hover:shadow-lg transition-shadow cursor-pointer text-inherit no-underline"
+                style={{ textDecoration: 'none' }}
+              >
+                <div className="text-lg font-semibold text-gray-900 mb-1">{service.name}</div>
+                {service.description && <div className="text-gray-600 text-sm mb-2">{service.description}</div>}
+                <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                  {service.category && <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">{service.category}</span>}
+                  {service.fee && <span className="bg-green-50 text-green-700 px-2 py-1 rounded">Fee: Rs. {service.fee}</span>}
+                  {service.duration && <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded">Duration: {service.duration} min</span>}
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

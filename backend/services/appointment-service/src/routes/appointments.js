@@ -18,13 +18,21 @@ const { validateCreateAppointment, validateUpdateAppointment } = require('../mid
 // Protect all routes with JWT auth middleware
 // router.use(auth); // COMMENTED OUT FOR TESTING - UNCOMMENT TO RE-ENABLE AUTH
 
-// Create Appointment
+// Create Appointment (handles POST to root /api/appointments)
 router.post('/', validateCreateAppointment, appointmentController.createAppointment);
 
-// View Appointments (with optional filters/pagination)
+// View Appointments (handles GET to root /api/appointments)  
 router.get('/', appointmentController.getAppointments);
 
+// Create Appointment (also handles POST to /api/appointments/appointments for backward compatibility)
+router.post('/appointments', validateCreateAppointment, appointmentController.createAppointment);
+
+// View Appointments (also handles GET to /api/appointments/appointments for backward compatibility)
+router.get('/appointments', appointmentController.getAppointments);
+
 // Update/Cancel Appointment
-router.put('/:id', validateUpdateAppointment, appointmentController.updateAppointment);
+router.put('/appointments/:id', validateUpdateAppointment, appointmentController.updateAppointment);
+
+module.exports = router;
 
 module.exports = router;

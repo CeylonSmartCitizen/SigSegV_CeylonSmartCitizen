@@ -33,13 +33,29 @@ function getEssentialHeaders(req) {
 // Proxy registration
 router.post('/register', async (req, res) => {
   try {
-    // Forward to /api/auth/register on the auth service
-    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/register`, req.body, { headers: getEssentialHeaders(req) });
+
+    console.log('Gateway: Received register request');
+    console.log('Gateway: Proxying to:', `${AUTH_SERVICE_URL}/api/auth/register`);
+    console.log('Gateway: Request body:', req.body);
+    
+    const response = await axios.post(`${AUTH_SERVICE_URL}/api/auth/register`, req.body, { 
+      headers: getEssentialHeaders(req),
+      timeout: 5000
+    });
+    
+    console.log('Gateway: Auth service response status:', response.status);
+    console.log('Gateway: Auth service response data:', response.data);
+    
+
     res.status(response.status).json(response.data);
   } catch (error) {
+    console.error('Gateway: Error proxying to auth service:', error.message);
     if (error.response) {
+      console.log('Gateway: Error response status:', error.response.status);
+      console.log('Gateway: Error response data:', error.response.data);
       res.status(error.response.status).json(error.response.data);
     } else {
+      console.log('Gateway: Network error or timeout');
       res.status(500).json({ success: false, message: 'Auth service unavailable' });
     }
   }

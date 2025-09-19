@@ -23,18 +23,26 @@ const auth = async (req, res, next) => {
 
     // Validate token with auth service
     const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
+    const profileUrl = `${authServiceUrl}/api/auth/profile`;
+    
+    console.log('Calling auth service at:', profileUrl);
+    console.log('With token:', token.substring(0, 20) + '...');
     
     try {
-      const response = await axios.get(`${authServiceUrl}/api/auth/validate`, {
+      const response = await axios.get(profileUrl, {
         headers: {
           'Authorization': `Bearer ${token}`
         },
         timeout: 5000 // 5 second timeout
       });
 
-      if (response.data.success && response.data.data.user) {
+      console.log('Auth service response status:', response.status);
+      console.log('Auth service response data:', JSON.stringify(response.data, null, 2));
+
+      if (response.data.success && response.data.data && response.data.data.user) {
         // Attach user info to request object
-        req.user = response.data.data.user;
+        req.user = response.data.data.user; // Extract the user object specifically
+        console.log('User authenticated:', req.user.id);
         next();
       } else {
         throw new Error('Invalid token response from auth service');

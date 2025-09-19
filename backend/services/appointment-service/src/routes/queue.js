@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const queueController = require('../controllers/queueController');
+const queueService = require('../services/queueService');
+const serviceRepository = require('../repositories/serviceRepository');
+const auth = require('../middleware/auth');
 const { body, query, param, validationResult } = require('express-validator');
 const { v4: uuidv4, validate: isValidUUID } = require('uuid');
 
@@ -451,6 +454,157 @@ router.get('/statistics/:departmentId', [
     }
 });
 
+/**
+ * GET /api/queue (root endpoint for frontend compatibility)
+ * Get user's current queue status
+ */
+router.get('/', [
+    // Use the existing auth middleware
+    auth
+], async (req, res) => {
+    try {
+        const user_id = req.user?.id;
+        
+        if (!user_id) {
+            return res.status(401).json({
+                success: false,
+                message: 'User authentication required'
+            });
+        }
+        
+        // Use queue service to get status (same as /status endpoint)
+        const queueStatus = await queueService.getQueueStatus(user_id);
+        
+        res.status(200).json({
+            success: true,
+            data: queueStatus
+        });
+        
+    } catch (error) {
+        console.error('Error in root queue endpoint:', error);
+        
+        if (error.message === 'QUEUE_ENTRY_NOT_FOUND') {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    inQueue: false,
+                    message: 'User is not currently in any queue'
+                }
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch queue status'
+        });
+    }
+});
+
+/**
+ * POST /api/queue (root endpoint for frontend compatibility)
+ * Join the queue
+ */
+router.post('/', [
+    // Use the existing auth middleware
+    require('../middleware/auth'),
+    // Add validation for required fields - only serviceId is required now
+    body('serviceId')
+        .notEmpty()
+        .withMessage('serviceId is required')
+        .custom((value) => {
+            if (!isValidUUID(value)) {
+                throw new Error('serviceId must be a valid UUID');
+            }
+            return true;
+        }),
+    handleValidationErrors
+], async (req, res) => {
+    try {
+        const user_id = req.user?.id;
+        const { serviceId } = req.body;
+        
+        if (!user_id) {
+            return res.status(401).json({
+                success: false,
+                message: 'User authentication required'
+            });
+        }
+
+        // Get service details to derive department_id
+        const serviceRepository = require('../repositories/serviceRepository');
+        const service = await serviceRepository.getServiceById(serviceId);
+        
+        if (!service) {
+            return res.status(404).json({
+                success: false,
+                message: 'Service not found'
+            });
+        }
+
+        // Use queue service to join queue with auto-populated fields
+        const result = await queueService.joinQueueByService({
+            user_id,
+            service_id: serviceId,
+            department_id: service.department_id, // Auto-derived from service
+            arrival_time: new Date().toISOString()
+        });
+        
+        res.status(200).json({
+            success: true,
+            data: result,
+            message: 'Successfully joined the queue'
+        });
+        
+    } catch (error) {
+        console.error('Error joining queue:', error);
+        
+        // Handle specific business logic errors
+        const errorMappings = {
+            'APPOINTMENT_NOT_FOUND': {
+                status: 404,
+                code: 'APPOINTMENT_NOT_FOUND',
+                message: 'Appointment not found'
+            },
+            'SERVICE_NOT_FOUND': {
+                status: 404,
+                code: 'SERVICE_NOT_FOUND',
+                message: 'Service not found'
+            },
+            'DEPARTMENT_NOT_FOUND': {
+                status: 404,
+                code: 'DEPARTMENT_NOT_FOUND',
+                message: 'Department not found'
+            },
+            'ALREADY_IN_QUEUE': {
+                status: 409,
+                code: 'ALREADY_IN_QUEUE',
+                message: 'User is already in queue'
+            },
+            'QUEUE_FULL': {
+                status: 409,
+                code: 'QUEUE_FULL',
+                message: 'Queue has reached maximum capacity'
+            }
+        };
+
+        const errorMapping = errorMappings[error.message];
+        if (errorMapping) {
+            return res.status(errorMapping.status).json({
+                success: false,
+                error: {
+                    code: errorMapping.code,
+                    message: errorMapping.message
+                }
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Failed to join queue'
+        });
+    }
+});
+
 // Error handling middleware for routes
 router.use((error, req, res, next) => {
     console.error('Queue routes error:', error);
@@ -473,5 +627,23 @@ router.use((error, req, res, next) => {
         }
     });
 });
+
+/**
+ * GET /api/queue
+ * Get user's queue status (convenience route that redirects to /status)
+ */
+router.get('/', [
+    // Authentication middleware 
+    authenticateToken,
+    
+    // Rate limiting
+    rateLimit({
+        windowMs: 1 * 60 * 1000, // 1 minute
+        max: 30, // 30 requests per minute
+        message: 'Too many queue status requests, try again later',
+        standardHeaders: true,
+        legacyHeaders: false
+    })
+], queueController.getQueueStatus);
 
 module.exports = router;
